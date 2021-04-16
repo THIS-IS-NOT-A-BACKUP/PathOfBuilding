@@ -727,6 +727,7 @@ function calcs.offence(env, actor, activeSkill)
 		output.TrapThrowingSpeed = baseSpeed * calcLib.mod(skillModList, skillCfg, "TrapThrowingSpeed") * output.ActionSpeedMod
 		output.TrapThrowingSpeed = m_min(output.TrapThrowingSpeed, data.misc.ServerTickRate)
 		output.TrapThrowingTime = 1 / output.TrapThrowingSpeed
+		skillData.timeOverride = output.TrapThrowingTime
 		if breakdown then
 			breakdown.TrapThrowingSpeed = { }
 			breakdown.multiChain(breakdown.TrapThrowingSpeed, {
@@ -786,6 +787,7 @@ function calcs.offence(env, actor, activeSkill)
 		output.MineLayingSpeed = baseSpeed * calcLib.mod(skillModList, skillCfg, "MineLayingSpeed") * output.ActionSpeedMod
 		output.MineLayingSpeed = m_min(output.MineLayingSpeed, data.misc.ServerTickRate)
 		output.MineLayingTime = 1 / output.MineLayingSpeed
+		skillData.timeOverride = output.MineLayingTime
 		if breakdown then
 			breakdown.MineLayingTime = { }
 			breakdown.multiChain(breakdown.MineLayingTime, {
@@ -3711,6 +3713,11 @@ function calcs.offence(env, actor, activeSkill)
 				maxMirageWarriors = maxMirageWarriors + mod.value
 			end
 
+			-- Non-channeled skills only attack once, disregard attack rate
+			if not usedSkill.skillTypes[SkillType.Channelled] then
+				newSkill.skillData.timeOverride = 1
+			end
+
 			if usedSkill.skillPartName then
 				env.player.mainSkill.skillPart = usedSkill.skillPart
 				env.player.mainSkill.skillPartName = usedSkill.skillPartName
@@ -3734,6 +3741,10 @@ function calcs.offence(env, actor, activeSkill)
 			end
 
 			-- Make any necessary corrections to output
+			-- Don't show attack rate for non-channeled skills
+			if not usedSkill.skillTypes[SkillType.Channelled] then
+				env.player.output.Speed = 0
+			end
 			env.player.output.ManaCost = output.ManaCost
 			env.player.output.Cooldown = output.Cooldown
 
@@ -3963,7 +3974,7 @@ function calcs.offence(env, actor, activeSkill)
 			output.MirageDPS = output.MirageDPS + activeSkill.mirage.output.DecayDPS
 			output.CombinedDPS = output.CombinedDPS + activeSkill.mirage.output.DecayDPS
 		end
-		if activeSkill.mirage.output.TotalDot then
+		if activeSkill.mirage.output.TotalDot and (skillFlags.DotCanStack or output.TotalDot == 0) then
 			output.MirageDPS = output.MirageDPS + activeSkill.mirage.output.TotalDot * (skillFlags.DotCanStack and mirageCount or 1)
 			output.CombinedDPS = output.CombinedDPS + activeSkill.mirage.output.TotalDot * (skillFlags.DotCanStack and mirageCount or 1)
 		end
