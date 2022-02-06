@@ -3,11 +3,12 @@
 -- Class: Button Control
 -- Basic button control.
 --
-local ButtonClass = newClass("ButtonControl", "Control", "TooltipHost", function(self, anchor, x, y, width, height, label, onClick)
+local ButtonClass = newClass("ButtonControl", "Control", "TooltipHost", function(self, anchor, x, y, width, height, label, onClick, onHover)
 	self.Control(anchor, x, y, width, height)
 	self.TooltipHost()
 	self.label = label
 	self.onClick = onClick
+	self.onHover = onHover
 end)
 
 function ButtonClass:Click()
@@ -90,6 +91,9 @@ function ButtonClass:Draw(viewPort)
 		SetDrawLayer(nil, 100)
 		self:DrawTooltip(x, y, width, height, viewPort)
 		SetDrawLayer(nil, 0)
+		if self.onHover ~= nil then
+			return self.onHover()
+		end
 	end
 end
 
@@ -99,6 +103,8 @@ function ButtonClass:OnKeyDown(key)
 	end
 	if key == "LEFTBUTTON" then
 		self.clicked = true
+	elseif self.enterFunc then
+		self.enterFunc()
 	end
 	return self
 end

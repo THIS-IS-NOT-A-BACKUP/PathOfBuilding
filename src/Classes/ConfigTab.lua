@@ -35,7 +35,7 @@ local ConfigTabClass = newClass("ConfigTab", "UndoHandler", "ControlHost", "Cont
 				local height = 20
 				for _, varControl in pairs(self.varControlList) do
 					if varControl:IsShown() then
-						height = height + 20
+						height = height + m_max(varControl.height, 16) + 4
 					end
 				end
 				return m_max(height, 32)
@@ -45,19 +45,19 @@ local ConfigTabClass = newClass("ConfigTab", "UndoHandler", "ControlHost", "Cont
 		else
 			local control
 			if varData.type == "check" then
-				control = new("CheckBoxControl", {"TOPLEFT",lastSection,"TOPLEFT"}, 234, 0, 18, nil, function(state)
+				control = new("CheckBoxControl", {"TOPLEFT",lastSection,"TOPLEFT"}, 234, 0, 18, varData.label, function(state)
 					self.input[varData.var] = state
 					self:AddUndoState()
 					self:BuildModList()
 					self.build.buildFlag = true
-				end) 
+				end)
 			elseif varData.type == "count" or varData.type == "integer" or varData.type == "countAllowZero" then
 				control = new("EditControl", {"TOPLEFT",lastSection,"TOPLEFT"}, 234, 0, 90, 18, "", nil, varData.type == "integer" and "^%-%d" or "%D", 6, function(buf)
 					self.input[varData.var] = tonumber(buf)
 					self:AddUndoState()
 					self:BuildModList()
 					self.build.buildFlag = true
-				end) 
+				end)
 			elseif varData.type == "list" then
 				control = new("DropDownControl", {"TOPLEFT",lastSection,"TOPLEFT"}, 234, 0, 118, 16, varData.list, function(index, value)
 					self.input[varData.var] = value.val
@@ -65,6 +65,13 @@ local ConfigTabClass = newClass("ConfigTab", "UndoHandler", "ControlHost", "Cont
 					self:BuildModList()
 					self.build.buildFlag = true
 				end)
+			elseif varData.type == "text" then
+				control = new("EditControl", {"TOPLEFT",lastSection,"TOPLEFT"}, 8, 0, 344, 118, "", nil, "^%C\t\n", nil, function(buf)
+					self.input[varData.var] = tostring(buf)
+					self:AddUndoState()
+					self:BuildModList()
+					self.build.buildFlag = true
+				end, 16)
 			else 
 				control = new("Control", {"TOPLEFT",lastSection,"TOPLEFT"}, 234, 0, 16, 16)
 			end
@@ -209,8 +216,12 @@ local ConfigTabClass = newClass("ConfigTab", "UndoHandler", "ControlHost", "Cont
 			else
 				control.tooltipText = varData.tooltip
 			end
-			t_insert(self.controls, new("LabelControl", {"RIGHT",control,"LEFT"}, -4, 0, 0, DrawStringWidth(14, "VAR", varData.label) > 228 and 12 or 14, "^7"..varData.label))
+			if varData.label and varData.type ~= "check" then
+				t_insert(self.controls, new("LabelControl", {"RIGHT",control,"LEFT"}, -4, 0, 0, DrawStringWidth(14, "VAR", varData.label) > 228 and 12 or 14, "^7"..varData.label))
+			end
 			if varData.var then
+				self.input[varData.var] = varData.defaultState
+				control.state = varData.defaultState
 				self.varControls[varData.var] = control
 			end
 			t_insert(self.controls, control)
@@ -248,9 +259,18 @@ function ConfigTabClass:Load(xml, fileName)
 	self:ResetUndo()
 end
 
+function ConfigTabClass:GetDefaultState(var)
+	for i = 1, #varList do
+		if varList[i].var == var then
+			return varList[i].defaultState
+		end
+	end
+	return nil
+end
+
 function ConfigTabClass:Save(xml)
 	for k, v in pairs(self.input) do
-		if v then
+		if v ~= self:GetDefaultState(k) then
 			local child = { elem = "Input", attrib = {name = k} }
 			if type(v) == "number" then
 				child.attrib.number = tostring(v)
@@ -317,8 +337,9 @@ function ConfigTabClass:Draw(viewPort, inputEvents)
 			if varControl:IsShown() then
 				doShow = true
 				local width, height = varControl:GetSize()
-				varControl.y = y + (18 - height) / 2
-				y = y + 20
+				height = m_max(height, 16)
+				varControl.y = y + 2
+				y = y + height + 4
 			end
 		end
 		section.shown = doShow
@@ -372,6 +393,10 @@ function ConfigTabClass:BuildModList()
 					varData.apply(input[varData.var], modList, enemyModList, self.build)
 				end
 			elseif varData.type == "list" then
+				if input[varData.var] then
+					varData.apply(input[varData.var], modList, enemyModList, self.build)
+				end
+			elseif varData.type == "text" then
 				if input[varData.var] then
 					varData.apply(input[varData.var], modList, enemyModList, self.build)
 				end

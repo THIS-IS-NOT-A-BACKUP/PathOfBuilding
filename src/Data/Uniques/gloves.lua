@@ -7,14 +7,16 @@ Atziri's Acuity
 Vaal Gauntlets
 Source: Drops from unique{Atziri, Queen of the Vaal} in normal{The Alluring Abyss}
 Variant: Pre 3.1.0
+Variant: Pre 3.16.0
 Variant: Current
 Requires Level 75, 100 Str
 +(60-80) to Intelligence
 +(60-75) to maximum Life
 (200-220)% increased Armour
-(25-35)% increased Global Critical Strike Chance
+{variant:2}(25-35)% increased Global Critical Strike Chance
+{variant:3}(40-60)% increased Global Critical Strike Chance
 {variant:1}Life and Mana Leech from Critical Strikes are instant
-{variant:2}You have Vaal Pact if you've dealt a Critical Strike Recently
+{variant:2,3}You have Vaal Pact if you've dealt a Critical Strike Recently
 ]],[[
 Replica Atziri's Acuity
 Vaal Gauntlets
@@ -51,7 +53,7 @@ Requires Level 63, 100 Str
 {variant:1,2,3}10% chance to Shock
 {variant:4}30% chance to Shock
 {variant:1,2}Adds (225-335) to (785-900) Lightning Damage to Unarmed Attacks
-{variant:3,4}Adds (150-225) to (525-600) Lightning Damage to Unarmed Attacks
+{variant:3,4}Adds (150-225) to (525-600) Lightning Damage to Unarmed Melee Hits
 {variant:1,2}Adds (60-90) to (210-240) Lightning Damage to Spells while Unarmed
 {variant:3,4}Adds (90-135) to (315-360) Lightning Damage to Spells while Unarmed
 {variant:1,2,3}+30 Energy Shield gained on Killing a Shocked Enemy
@@ -152,7 +154,6 @@ Adds (8-12) to (15-20) Physical Damage to Attacks
 ]],[[
 Hrimsorrow
 Goathide Gloves
-Upgrade: Upgrades to unique{Hrimburn} via prophecy{Fire and Ice}
 Variant: Pre 2.6.0
 Variant: Current
 Requires Level 9, 17 Dex
@@ -168,7 +169,7 @@ Reflects 10 Cold Damage to Melee Attackers
 ]],[[
 Hrimburn
 Goathide Gloves
-Source: Upgraded from unique{Hrimsorrow} via prophecy{Fire and Ice}
+Source: Drops from any endgame map boss
 Variant: Pre 2.6.0
 Variant: Current
 Requires Level 24, 17 Dex
@@ -213,12 +214,15 @@ Your Mark transfers to another Enemy when Marked Enemy dies
 ]],[[
 Oskarm
 Nubuck Gloves
+Variant: Pre 3.16.0
+Variant: Current
 Requires Level 52, 50 Dex
 Trigger Level 10 Assassin's Mark when you Hit a Rare or Unique Enemy
 (30-40)% increased Accuracy Rating
 +(40-50) to maximum Life
-+(-20-10)% to Chaos Resistance
-(7-8)% chance to Dodge Spell Damage
+-(20-10)% to Chaos Resistance
+{variant:1}(7-8)% chance to Suppress Spell Damage
+{variant:2}(10-12)% chance to Suppress Spell Damage
 2% increased Attack Critical Strike Chance per 200 Accuracy Rating
 ]],[[
 Painseeker
@@ -285,7 +289,6 @@ Sacrifice 5% of Life to gain that much Energy Shield when you Cast a Spell
 ]],[[
 Doedre's Tenure
 Velvet Gloves
-Upgrade: Upgrades to unique{Doedre's Malevolence} via prophecy{The Malevolent Witch}
 Variant: Pre 2.6.0
 Variant: Current
 Requires Level 12, 21 Int
@@ -300,7 +303,7 @@ Requires Level 12, 21 Int
 ]],[[
 Doedre's Malevolence
 Velvet Gloves
-Source: Upgraded from unique{Doedre's Tenure} via prophecy{The Malevolent Witch}
+Source: Drops from any endgame map boss
 Variant: Pre 3.11.0
 Variant: Current
 Requires Level 64, 21 Int
@@ -314,7 +317,6 @@ Adds (48-56) to (73-84) Chaos Damage to Spells
 ]],[[
 Grip of the Council
 Arcanist Gloves
-Source: prophecy{The Unbreathing Queen V}
 Requires Level 60, 95 Int
 +30 to Strength
 +(30-50) to maximum Life
@@ -379,7 +381,7 @@ Requires Level 55, 79 Int
 {variant:3,4}(180-250)% increased Energy Shield
 {variant:1}80% increased Mana Cost of Skills
 {variant:2,3}(40-80)% increased Mana Cost of Skills
-{variant:4}+(40-80) to Total Mana Cost of Skills
+{variant:4}Lose (40-80) Mana when you use a Skill
 +(15-20) Energy Shield gained on Kill
 ]],
 -- Gloves: Armour/Evasion
@@ -423,9 +425,18 @@ Requires Level 15
 (6-9)% increased Attack Speed
 (80-120)% increased Armour and Evasion
 (3-4) Life Regenerated per second
-Recover 20% of your Maximum Life on Rampage
+Recover 20% of Life on Rampage
 Kills grant an additional Vaal Soul if you have Rampaged Recently
 Rampage
+]],[[
+Gravebind
+Hydrascale Gauntlets
+Requires Level 59, 45 Str, 45 Dex
+Implicits: 0
+(100-150)% increased Armour and Evasion
++(19-29)% to Chaos Resistance
++(15-25) Life gained on kill
+Nearby Enemies Killed by anyone count as being Killed by you instead
 ]],[[
 Haemophilia
 Serpentscale Gauntlets
@@ -650,7 +661,6 @@ Minions have (5-10)% chance to Freeze, Shock and Ignite
 ]],[[
 Volkuur's Guidance
 Zealot Gloves
-Source: Drops from The Pale Council
 Variant: Fire
 Variant: Cold
 Variant: Lightning
@@ -720,8 +730,8 @@ Your Raised Zombies count as Corpses
 Architect's Hand
 Variant: Pre 3.14.0
 Variant: Current
-{variant:2}Ambush Mitts
 {variant:1}Strapped Mitts
+{variant:2}Ambush Mitts
 League: Incursion
 Upgrade: Upgrades to unique{Slavedriver's Hand} via currency{Vial of Dominance}
 {variant:1}Requires Level 16
@@ -783,7 +793,7 @@ Requires Level 16, 14 Dex, 14 Int
 {variant:5}+30% to Global Critical Strike Multiplier
 10% reduced Enemy Stun Threshold
 {variant:1}(800-1000)% more Unarmed Physical Damage
-{variant:2,3,4,5}(600-800)% more Unarmed Physical Damage
+{variant:2,3,4,5}(600-800)% more Physical Damage with Unarmed Melee Attacks
 Extra gore
 ]],[[
 Fenumus' Weave
@@ -885,5 +895,29 @@ Socketed Gems are Supported by level 18 Added Lightning Damage
 +(25-30) to maximum Energy Shield
 10% increased Stun Duration on Enemies
 100% increased Duration of Lightning Ailments
+]],
+-- Gloves: Ward
+[[
+Medved's Challenge
+Runic Gauntlets
+Requires Level 69, 38 Str, 38 Dex, 38 Int
+League: Expedition
+800% increased Attribute Requirements
+(30–50)% increased Ward
++(15–25)% to all Elemental Resistances
+80% less Flask Charges gained from Kills
+Flasks gain 1 Charge per second if you've Hit a Unique Enemy Recently
+]],[[
+Nightgrip
+Runic Gages
+Variant: Pre 3.16.0
+Variant: Current
+League: Expedition
+Requires Level 48, 31 Str, 31 Dex, 31 Int
+(33–48)% increased Ward
++(17–23)% to Chaos Resistance
+{variant:1}Gain Added Chaos Damage equal to 25% of Ward
+{variant:2}Gain Added Chaos Damage equal to 20% of Ward
+75% of Damage bypasses Ward
 ]],
 }

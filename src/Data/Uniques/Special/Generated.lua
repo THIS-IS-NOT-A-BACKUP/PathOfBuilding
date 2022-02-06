@@ -6,6 +6,170 @@
 
 data.uniques.generated = { }
 
+local parseVeiledModName = function(string)
+	return (string:
+	gsub("%JunMasterVeiled", ""):
+	gsub("%Local", ""):
+	gsub("%Display", ""):
+	gsub("%Crafted", ""):
+	gsub("(%d)h", ""):
+	gsub("%_", ""):
+	gsub("(%l)(%u)", "%1 %2"):
+	gsub("(%d)", " %1 "))
+end
+
+local veiledModIsActive = function(mod, baseType, specificType)
+	local baseIndex = isValueInTable(mod.weightKey, baseType)
+	local typeIndex = isValueInTable(mod.weightKey, specificType)
+	return (typeIndex and mod.weightVal[typeIndex] > 0) or (not typeIndex and baseIndex and mod.weightVal[baseIndex] > 0)
+end
+
+local getVeiledMods = function (baseType, specificType, canHaveCatarinaMod)
+	local veiledMods = { }
+	for veiledModIndex, veiledMod in pairs(data.veiledMods) do
+		if veiledModIsActive(veiledMod, baseType, specificType) then
+			local veiledName = parseVeiledModName(veiledModIndex)
+
+			veiledName = "("..veiledMod.type..") "..veiledName
+
+			local veiled = { veiledName = veiledName, veiledLines = { } }
+			for line, value in ipairs(veiledMod) do
+				veiled.veiledLines[line] = value
+			end
+
+			if (canHaveCatarinaMod or (veiledMod.affix ~= "Catarina's" and veiledMod.affix ~= "Haku's")) then
+				table.insert(veiledMods, veiled)
+			end
+		end
+	end
+    table.sort(veiledMods, function (m1, m2) return m1.veiledName < m2.veiledName end )
+	return veiledMods
+end
+
+local paradoxicaMods = getVeiledMods("weapon", "one_hand_weapon", false)
+local paradoxica = {
+	"Paradoxica",
+	"Vaal Rapier",
+	"League: Betrayal",
+	"Has Alt Variant: true",
+	"Selected Variant: 1",
+	"Selected Alt Variant: 20"
+}
+
+for index, mod in pairs(paradoxicaMods) do
+	if (mod.veiledName ~= "(Suffix) Double Damage Chance") then
+		table.insert(paradoxica, "Variant: "..mod.veiledName)
+	end
+end
+
+table.insert(paradoxica, "Source: Drops from Bosses in Safehouse")
+table.insert(paradoxica, "Requires Level 66, 212 Dex")
+table.insert(paradoxica, "Implicits: 1")
+table.insert(paradoxica, "+25% to Global Critical Strike Multiplier")
+
+for index, mod in pairs(paradoxicaMods) do
+	if (mod.veiledName ~= "(Suffix) Double Damage Chance") then
+		for _, value in pairs(mod.veiledLines) do
+			table.insert(paradoxica, "{variant:"..index.."}"..value.."")
+		end
+	end
+end
+
+table.insert(paradoxica, "Attacks with this Weapon deal Double Damage")
+table.insert(data.uniques.generated, table.concat(paradoxica, "\n"))
+
+local caneOfKulemakMods = getVeiledMods("weapon", "staff", true)
+local caneOfKulemak = {
+	"Cane of Kulemak",
+	"Serpentine Staff",
+	"Has Alt Variant: true",
+	"Has Alt Variant Two: true",
+	"Selected Variant: 1",
+	"Selected Alt Variant: 20"
+}
+
+for index, mod in pairs(caneOfKulemakMods) do
+	table.insert(caneOfKulemak, "Variant: "..mod.veiledName)
+end
+
+table.insert(caneOfKulemak, "Requires Level 68, 85 Str, 85 Int")
+table.insert(caneOfKulemak, "Implicits: 1")
+table.insert(caneOfKulemak, "+20% Chance to Block Attack Damage while wielding a Staff")
+table.insert(caneOfKulemak, "(60-90)% increased Unveiled Modifier magnitudes")
+
+for index, mod in pairs(caneOfKulemakMods) do
+	for _, value in pairs(mod.veiledLines) do
+		table.insert(caneOfKulemak, "{variant:"..index.."}"..value.."")
+	end
+end
+
+table.insert(data.uniques.generated, table.concat(caneOfKulemak, "\n"))
+
+local replicaParadoxicaMods = getVeiledMods("weapon", "one_hand_weapon", true)
+local replicaParadoxica = {
+	"Replica Paradoxica",
+	"Vaal Rapier",
+	"League: Heist",
+	"Has Alt Variant: true",
+	"Has Alt Variant Two: true",
+	"Has Alt Variant Three: true",
+	"Has Alt Variant Four: true",
+	"Has Alt Variant Five: true",
+	"Selected Variant: 1",
+	"Selected Alt Variant: 2",
+	"Selected Alt Variant Two: 3",
+	"Selected Alt Variant Three: 25",
+	"Selected Alt Variant Four: 27",
+	"Selected Alt Variant Five: 34"
+}
+
+for index, mod in pairs(replicaParadoxicaMods) do
+	table.insert(replicaParadoxica, "Variant: "..mod.veiledName)
+end
+
+table.insert(replicaParadoxica, "Requires Level 66, 212 Dex")
+table.insert(replicaParadoxica, "Implicits: 1")
+table.insert(replicaParadoxica, "+25% to Global Critical Strike Multiplier")
+
+for index, mod in pairs(replicaParadoxicaMods) do
+	for _, value in pairs(mod.veiledLines) do
+		table.insert(replicaParadoxica, "{variant:"..index.."}"..value.."")
+	end
+end
+
+table.insert(data.uniques.generated, table.concat(replicaParadoxica, "\n"))
+
+local queensHungerMods = getVeiledMods("body_armour", "int_armour", false)
+local queensHunger = {
+	"The Queen's Hunger",
+	"Vaal Regalia",
+	"League: Betrayal",
+	"Has Alt Variant: true",
+	"Selected Variant: 1",
+	"Selected Alt Variant: 24"
+}
+
+for index, mod in pairs(queensHungerMods) do
+	table.insert(queensHunger, "Variant: "..mod.veiledName)
+end
+
+table.insert(queensHunger, "Requires Level 68, 194 Int")
+table.insert(queensHunger, "Trigger Level 20 Bone Offering, Flesh Offering or Spirit Offering every 5 seconds")
+table.insert(queensHunger, "Offering Skills Triggered this way also affect you")
+table.insert(queensHunger, "(5-10)% increased Cast Speed")
+table.insert(queensHunger, "(100-130)% increased Energy Shield")
+table.insert(queensHunger, "(6-10)% increased maximum Life")
+
+for index, mod in pairs(queensHungerMods) do
+	for _, value in pairs(mod.veiledLines) do
+		table.insert(queensHunger, "{variant:"..index.."}"..value.."")
+	end
+end
+
+table.insert(data.uniques.generated, table.concat(queensHunger, "\n"))
+
+
+
 local megalomaniac = {
 	"Megalomaniac",
 	"Medium Cluster Jewel",
@@ -59,8 +223,10 @@ for _, gemData in pairs(data.gems) do
 end
 table.sort(gems)
 for index, name in ipairs(gems) do
-	table.insert(forbiddenShako, "Variant: "..name)
-	table.insert(forbiddenShako, "{variant:"..index.."}Socketed Gems are Supported by Level (15-25) "..name)
+	table.insert(forbiddenShako, "Variant: "..name.. " (Low Level)")
+	table.insert(forbiddenShako, "{variant:"..(index * 2 - 1).."}Socketed Gems are Supported by Level (1-10) "..name)
+	table.insert(forbiddenShako, "Variant: "..name.. " (High Level)")
+	table.insert(forbiddenShako, "{variant:"..(index * 2).."}Socketed Gems are Supported by Level (25-35) "..name)
 	table.insert(replicaForbiddenShako, "Variant: "..name.. " (Low Level)")
 	table.insert(replicaForbiddenShako, "{variant:"..(index * 2 - 1).."}Socketed Gems are Supported by Level (1-10) "..name)
 	table.insert(replicaForbiddenShako, "Variant: "..name.. " (High Level)")
@@ -83,7 +249,7 @@ local enduranceChargeMods = {
 	},
 	[2] = {
 		["Block Attacks"] = "1% Chance to Block Attack Damage per Endurance Charge",
-		["Dodge Attacks"] = "1% Chance to Dodge Attack Hits per Endurance Charge",
+		["Spell Suppression"] = "1% chance to Suppress Spell Damage per Endurance Charge",
 		["Chaos Res"] = "+4% to Chaos Resistance per Endurance Charge",
 		["Fire as Chaos"] = "Gain 1% of Fire Damage as Extra Chaos Damage per Endurance Charge",
 		["Attack and Cast Speed"] = "1% increased Attack and Cast Speed per Endurance Charge",
@@ -111,7 +277,7 @@ local frenzyChargeMods = {
 	},
 	[2] = {
 		["Block Attacks"] = "1% Chance to Block Attack Damage per Frenzy Charge",
-		["Dodge Attacks"] = "1% Chance to Dodge Attack Hits per Frenzy Charge",
+		["Spell Suppression"] = "1% chance to Suppress Spell Damage per Frenzy Charge",
 		["Accuracy Rating"] = "10% increased Accuracy Rating per Frenzy Charge",
 		["Cold as Chaos"] = "Gain 1% of Cold Damage as Extra Chaos Damage per Frenzy Charge",
 		["Attack and Cast Speed"] = "1% increased Attack and Cast Speed per Frenzy Charge",
@@ -139,7 +305,7 @@ local powerChargeMods = {
 	},
 	[2] = {
 		["Block Attacks"] = "1% Chance to Block Attack Damage per Power Charge",
-		["Dodge Attacks"] = "1% Chance to Dodge Attack Hits per Power Charge",
+		["Spell Suppression"] = "1% chance to Suppress Spell Damage per Power Charge",
 		["Phys. Damage Red."] = "1% additional Physical Damage Reduction per Power Charge",
 		["Lightning as Chaos"] = "Gain 1% of Lightning Damage as Extra Chaos Damage per Power Charge",
 		["Attack and Cast Speed"] = "1% increased Attack and Cast Speed per Power Charge",
@@ -235,6 +401,7 @@ local excludedKeystones = {
 	"Hollow Palm Technique", -- exclusive to specific unique
 	"Immortal Ambition", -- exclusive to specific unique
 	"Necromantic Aegis", -- to prevent infinite loop
+	"Secrets of Suffering", -- exclusive to specific items
 }
 local keystones = {}
 for _, name in ipairs(data.keystones) do
@@ -247,7 +414,7 @@ for _, name in ipairs(keystones) do
 end
 table.insert(skinOfTheLords, "Implicits: 0")
 table.insert(skinOfTheLords, "Sockets cannot be modified")
-table.insert(skinOfTheLords, "+1 to Level of Socketed Gems")
+table.insert(skinOfTheLords, "+2 to Level of Socketed Gems")
 table.insert(skinOfTheLords, "100% increased Global Defences")
 table.insert(skinOfTheLords, "You can only Socket Corrupted Gems in this item")
 for index, name in ipairs(keystones) do
@@ -374,3 +541,36 @@ for _, mod in ipairs(data.uniqueMods["Watcher's Eye"]) do
 end
 
 table.insert(data.uniques.generated, table.concat(watchersEye, "\n"))
+
+function buildTreeDependentUniques(tree)
+	buildForbidden(tree.classNotables)
+end
+
+function buildForbidden(classNotables)
+	local forbidden = { }
+	for _, name in pairs({"Flame", "Flesh"}) do
+		forbidden[name] = { }
+		table.insert(forbidden[name], "Forbidden " .. name)
+		table.insert(forbidden[name], "Prismatic Jewel")
+		local index = 1
+		for className, notableTable in pairs(classNotables) do
+			for _, notableName in ipairs(notableTable) do
+				table.insert(forbidden[name], "Variant: (" .. className .. ") " .. notableName)
+				index = index + 1
+			end
+		end
+		table.insert(forbidden[name], "Limited to: 1")
+		table.insert(forbidden[name], "Item Level: 83")
+		index = 1
+		for className, notableTable in pairs(classNotables) do
+			for _, notableName in ipairs(notableTable) do
+				table.insert(forbidden[name], "{variant:" .. index .. "}" .. "Requires Class " .. className)
+				table.insert(forbidden[name], "{variant:" .. index .. "}" .. "Allocates ".. notableName .. " if you have the matching modifiers on Forbidden " .. (name == "Flame" and "Flesh" or "Flame"))
+				index = index + 1
+			end
+		end
+		table.insert(forbidden[name], "Corrupted")
+	end
+	table.insert(data.uniques.generated, table.concat(forbidden["Flame"], "\n"))
+	table.insert(data.uniques.generated, table.concat(forbidden["Flesh"], "\n"))
+end
