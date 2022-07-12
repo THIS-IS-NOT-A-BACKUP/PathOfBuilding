@@ -35,6 +35,9 @@ end
 
 -- Calculate physical damage reduction from armour, float
 function calcs.armourReductionF(armour, raw)
+	if armour == 0 and raw == 0 then
+		return 0
+	end
 	return (armour / (armour + raw * 5) * 100)
 end
 
@@ -110,6 +113,11 @@ function calcs.defence(env, actor)
 				"Max: "..max.."%",
 				"Total: "..total.."%",
 			}
+			breakdown["Totem"..elem.."Resist"] = {
+				"Min: "..min.."%",
+				"Max: "..totemMax.."%",
+				"Total: "..totemTotal.."%",
+			}
 		end
 	end
 
@@ -179,7 +187,7 @@ function calcs.defence(env, actor)
 	if modDB:Flag(nil, "ArmourAppliesToEnergyShieldRecharge") then
 		-- Armour to ES Recharge conversion from Armour and Energy Shield Mastery
 		local multiplier = (modDB:Max(nil, "ImprovedArmourAppliesToEnergyShieldRecharge") or 100) / 100
-		for _, value in ipairs(modDB:Tabulate("INC", nil, "Armour")) do
+		for _, value in ipairs(modDB:Tabulate("INC", nil, "Armour", "ArmourAndEvasion", "Defences")) do
 			local mod = value.mod
 			local modifiers = calcLib.getConvertedModTags(mod, multiplier)
 			modDB:NewMod("EnergyShieldRecharge", "INC", m_floor(mod.value * multiplier), mod.source, mod.flags, mod.keywordFlags, unpack(modifiers))
@@ -824,29 +832,23 @@ function calcs.defence(env, actor)
 	end
 	output.InteruptStunAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidInteruptStun"), 100)
 	output.BlindAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidBlind"), 100)
-	output.ShockAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidShock"), 100)
-	output.FreezeAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidFreeze"), 100)
-	output.ChillAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidChill"), 100)
-	output.IgniteAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidIgnite"), 100)
-	output.BleedAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidBleed"), 100)
-	output.PoisonAvoidChance = m_min(modDB:Sum("BASE", nil, "AvoidPoison"), 100)
+	for _, ailment in ipairs(data.ailmentTypeList) do
+		output[ailment.."AvoidChance"] = m_min(modDB:Sum("BASE", nil, "Avoid"..ailment), 100)
+	end
 	output.CritExtraDamageReduction = m_min(modDB:Sum("BASE", nil, "ReduceCritExtraDamage"), 100)
 	output.LightRadiusMod = calcLib.mod(modDB, nil, "LightRadius")
 	if breakdown then
 		breakdown.LightRadiusMod = breakdown.mod(modDB, nil, "LightRadius")
 	end
+	output.CurseEffectOnSelf = modDB:More(nil, "CurseEffectOnSelf") * (100 + modDB:Sum("INC", nil, "CurseEffectOnSelf"))
 
-	-- Ailment duration on self	
-	output.SelfFreezeDuration = 100 * modDB:More(nil, "SelfFreezeDuration") * (1 + modDB:Sum("INC", nil, "SelfFreezeDuration") / 100) 
-	output.SelfBlindDuration = 100 * modDB:More(nil, "SelfBlindDuration") * (1 + modDB:Sum("INC", nil, "SelfBlindDuration") / 100)  
-	output.SelfShockDuration = 100 * modDB:More(nil, "SelfShockDuration") * (1 + modDB:Sum("INC", nil, "SelfShockDuration") / 100) 
-	output.SelfChillDuration = 100 * modDB:More(nil, "SelfChillDuration") * (1 + modDB:Sum("INC", nil, "SelfChillDuration") / 100) 
-	output.SelfIgniteDuration = 100 * modDB:More(nil, "SelfIgniteDuration") * (1 + modDB:Sum("INC", nil, "SelfIgniteDuration") / 100) 
-	output.SelfBleedDuration = 100 * modDB:More(nil, "SelfBleedDuration") * (1 + modDB:Sum("INC", nil, "SelfBleedDuration") / 100) 
-	output.SelfPoisonDuration = 100 * modDB:More(nil, "SelfPoisonDuration") * (1 + modDB:Sum("INC", nil, "SelfPoisonDuration") / 100)
-	output.SelfChillEffect = 100 * modDB:More(nil, "SelfChillEffect") * (1 + modDB:Sum("INC", nil, "SelfChillEffect") / 100)
-	output.SelfShockEffect = 100 * modDB:More(nil, "SelfShockEffect") * (1 + modDB:Sum("INC", nil, "SelfShockEffect") / 100)
-	
+	-- Ailment duration on self
+	output.SelfBlindDuration = modDB:More(nil, "SelfBlindDuration") * (100 + modDB:Sum("INC", nil, "SelfBlindDuration"))
+	for _, ailment in ipairs(data.ailmentTypeList) do
+		output["Self"..ailment.."Duration"] = modDB:More(nil, "Self"..ailment.."Duration") * (100 + modDB:Sum("INC", nil, "Self"..ailment.."Duration")) 
+	end
+	output.SelfChillEffect = modDB:More(nil, "SelfChillEffect") * (100 + modDB:Sum("INC", nil, "SelfChillEffect"))
+	output.SelfShockEffect = modDB:More(nil, "SelfShockEffect") * (100 + modDB:Sum("INC", nil, "SelfShockEffect"))
 	--Enemy damage input and modifications
 	do
 		output["totalEnemyDamage"] = 0
@@ -865,48 +867,21 @@ function calcs.defence(env, actor)
 				},
 			}
 		end
-		local enemyCritChance = env.configInput["enemyCritChance"] or 5
-		local enemyCritDamage = env.configInput["enemyCritDamage"] or 30
+		local enemyCritChance = env.configInput["enemyCritChance"] or env.configPlaceholder["enemyCritChance"] or 0
+		local enemyCritDamage = env.configInput["enemyCritDamage"] or env.configPlaceholder["enemyCritDamage"] or 0
 		output["EnemyCritEffect"] = 1 + enemyCritChance / 100 * (enemyCritDamage / 100) * (1 - output.CritExtraDamageReduction / 100)
 		for _, damageType in ipairs(dmgTypeList) do
 			local enemyDamageMult = calcLib.mod(enemyDB, nil, "Damage", damageType.."Damage", isElemental[damageType] and "ElementalDamage" or nil) --missing taunt from allies
 			local enemyDamage = env.configInput["enemy"..damageType.."Damage"]
 			local enemyPen = env.configInput["enemy"..damageType.."Pen"]
 			local sourceStr = enemyDamage == nil and "Default" or "Config"
-
-			if env.configInput["enemyIsBoss"] == "Uber Atziri" then -- random boss (not specificaly uber ziri)
-				if enemyDamage == nil then
-					enemyDamage = env.data.monsterDamageTable[env.enemyLevel] * 1.5  * data.misc.stdBossDPSMult
-					if damageType == "Chaos" then
-						enemyDamage = enemyDamage / 4
-					end
-				end
-			elseif env.configInput["enemyIsBoss"] == "Shaper" then
-				if enemyDamage == nil then
-					enemyDamage = env.data.monsterDamageTable[env.enemyLevel] * 1.5  * data.misc.shaperDPSMult
-					if damageType == "Chaos" then
-						enemyDamage = enemyDamage / 4
-					end
-				end
-				if enemyPen == nil and isElemental[damageType] then
-					enemyPen = data.misc.shaperPen
-				end
-			elseif env.configInput["enemyIsBoss"] == "Sirus" then
-				if enemyDamage == nil then
-					enemyDamage = env.data.monsterDamageTable[env.enemyLevel] * 1.5  * data.misc.sirusDPSMult
-					if damageType == "Chaos" then
-						enemyDamage = enemyDamage / 4
-					end
-				end
-				if enemyPen == nil and isElemental[damageType] then
-					enemyPen = data.misc.sirusPen
-				end
-			else
-				if enemyDamage == nil and damageType == "Physical" then
-					enemyDamage = env.data.monsterDamageTable[env.enemyLevel] * 1.5
-				end
+			
+			if enemyDamage == nil and env.configPlaceholder["enemy"..damageType.."Damage"] then
+				enemyDamage = env.configPlaceholder["enemy"..damageType.."Damage"]
 			end
-
+			if enemyPen == nil and env.configPlaceholder["enemy"..damageType.."Pen"] then
+				enemyPen = env.configPlaceholder["enemy"..damageType.."Pen"]
+			end
 			enemyDamage = enemyDamage or 0
 			output[damageType.."EnemyPen"] = enemyPen or 0
 			output["totalEnemyDamageIn"] = output["totalEnemyDamageIn"] + enemyDamage
@@ -1090,7 +1065,7 @@ function calcs.defence(env, actor)
 	for _, damageType in ipairs(dmgTypeList) do
 		-- Calculate incoming damage multiplier
 		local resist = modDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") and 0 or output[damageType.."ResistWhenHit"] or output[damageType.."Resist"]
-		local enemyPen = modDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") and 0 or env.configInput["enemy"..damageType.."Pen"] or output[damageType.."EnemyPen"] or 0
+		local enemyPen = modDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") and 0 or output[damageType.."EnemyPen"]
 		local takenFlat = modDB:Sum("BASE", nil, "DamageTaken", damageType.."DamageTaken", "DamageTakenWhenHit", damageType.."DamageTakenWhenHit")
 		if damageCategoryConfig == "Melee" or damageCategoryConfig == "Projectile" then
 			takenFlat = takenFlat + modDB:Sum("BASE", nil, "DamageTakenFromAttacks", damageType.."DamageTakenFromAttacks")
@@ -1416,7 +1391,7 @@ function calcs.defence(env, actor)
 				if output[damageType.."EnergyShieldBypass"] > 0 then
 					local poolProtected = output.EnergyShieldRecoveryCap / (1 - output[damageType.."EnergyShieldBypass"] / 100) * (output[damageType.."EnergyShieldBypass"] / 100)
 					output[damageType.."TotalPool"] = m_max(output[damageType.."TotalPool"] - poolProtected, 0) + m_min(output[damageType.."TotalPool"], poolProtected) / (output[damageType.."EnergyShieldBypass"] / 100)
-				else 
+				else
 					output[damageType.."TotalPool"] = output[damageType.."TotalPool"] + output.EnergyShieldRecoveryCap
 				end
 			end
@@ -1474,8 +1449,10 @@ function calcs.defence(env, actor)
 			if not DamageIn[damageType.."EnergyShieldBypass"] then
 				DamageIn[damageType.."EnergyShieldBypass"] = output[damageType.."EnergyShieldBypass"] or 0
 			end
+
 		end
 		DamageIn["LifeLossBelowHalfLost"] = DamageIn["LifeLossBelowHalfLost"] or 0
+		DamageIn["WardBypass"] = DamageIn["WardBypass"] or modDB:Sum("BASE", nil, "WardBypass") or 0
 		
 		local itterationMultiplier = 1
 		local maxHits = data.misc.ehpCalcMaxHitsToCalc
@@ -1525,7 +1502,7 @@ function calcs.defence(env, actor)
 						Damage[damageType] = Damage[damageType] - tempDamage
 					end
 					if ward > 0 then
-						local tempDamage = m_min(Damage[damageType], ward)
+						local tempDamage = m_min(Damage[damageType] * (1 - DamageIn["WardBypass"] / 100), ward)
 						ward = ward - tempDamage
 						Damage[damageType] = Damage[damageType] - tempDamage
 					end
@@ -1752,7 +1729,7 @@ function calcs.defence(env, actor)
 	
 	--survival time
 	do
-		local enemySkillTime = env.configInput.enemySpeed or 700
+		local enemySkillTime = env.configInput.enemySpeed or env.configPlaceholder.enemySpeed or 700
 		local enemyActionSpeed = calcs.actionSpeedMod(actor.enemy)
 		enemySkillTime = enemySkillTime / 1000 / enemyActionSpeed
 		output["EHPsurvivalTime"] = output["TotalNumberOfHits"] * enemySkillTime
@@ -1944,7 +1921,15 @@ function calcs.defence(env, actor)
 			output[damageType.."TotalPool"] =  output[damageType.."TotalPool"] / (1 - output["preventedLifeLoss"] / 100)
 		end
 		--ward
-		output[damageType.."TotalPool"] = output[damageType.."TotalPool"] + output.Ward or 0
+		local wardBypass = modDB:Sum("BASE", nil, "WardBypass") or 0
+		if wardBypass > 0 then
+			local poolProtected = output.Ward / (1 - wardBypass / 100) * (wardBypass / 100)
+			local sourcePool = output[damageType.."TotalPool"]
+			sourcePool = m_max(sourcePool - poolProtected, 0) + m_min(sourcePool, poolProtected) / (wardBypass / 100)
+			output[damageType.."TotalPool"] = sourcePool
+		else
+			output[damageType.."TotalPool"] = output[damageType.."TotalPool"] + output.Ward or 0
+		end
 		--aegis
 		output[damageType.."TotalHitPool"] = output[damageType.."TotalPool"] + output[damageType.."Aegis"] or 0 + output[damageType.."sharedAegis"] or 0 + isElemental[damageType] and output[damageType.."sharedElementalAegis"] or 0
 		--guardskill

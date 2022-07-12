@@ -1566,7 +1566,7 @@ function ItemsTabClass:UpdateAffixControl(control, item, type, outputTable, outp
 	control.outputTable = outputTable
 	control.outputIndex = outputIndex
 	control.slider.shown = false
-	control.slider.val = 0.5
+	control.slider.val = main.defaultItemAffixQuality or 0.5
 	local selAffix = item[outputTable][outputIndex].modId
 	if (item.type == "Jewel" and item.base.subType ~= "Abyss") then
 		for i, modId in pairs(affixList) do
@@ -1828,7 +1828,7 @@ function ItemsTabClass:EditDisplayItemText()
 	local controls = { }
 	local function buildRaw()
 		local editBuf = controls.edit.buf
-		if editBuf:match("^Item Class: .*\nRarity: ") then
+		if editBuf:match("^Item Class: .*\nRarity: ") or editBuf:match("^Rarity: ") then
 			return editBuf
 		else
 			return "Rarity: "..controls.rarity.list[controls.rarity.selIndex].rarity.."\n"..controls.edit.buf
@@ -1843,9 +1843,7 @@ function ItemsTabClass:EditDisplayItemText()
 		controls.rarity.selIndex = 3
 	end
 	controls.edit.font = "FIXED"
-	controls.edit.pasteFilter = function(text)
-		return text:gsub("\246","o")
-	end
+	controls.edit.pasteFilter = itemLib.sanitiseItemText
 	controls.save = new("ButtonControl", nil, -45, 470, 80, 20, self.displayItem and "Save" or "Create", function()
 		local id = self.displayItem and self.displayItem.id
 		self:CreateDisplayItemFromRaw(buildRaw(), not self.displayItem)
@@ -2682,6 +2680,11 @@ function ItemsTabClass:AddItemTooltip(tooltip, item, slot, dbMode)
 		local output = self.build.calcsTab.mainOutput
 		local durInc = modDB:Sum("INC", nil, "FlaskDuration")
 		local effectInc = modDB:Sum("INC", nil, "FlaskEffect")
+
+		if item.rarity == "MAGIC" and not item.base.flask.life and not item.base.flask.mana then
+			effectInc = effectInc + modDB:Sum("INC", nil, "MagicUtilityFlaskEffect")
+		end
+
 		if item.base.flask.life or item.base.flask.mana then
 			local rateInc = modDB:Sum("INC", nil, "FlaskRecoveryRate")
 			local instantPerc = flaskData.instantPerc
@@ -2899,7 +2902,10 @@ end
 function ItemsTabClass:CreateUndoState()
 	local state = { }
 	state.activeItemSetId = self.activeItemSetId
-	state.items = copyTableSafe(self.items, false, true)
+	state.items = { }
+	for k, v in pairs(self.items) do
+		state.items[k] = copyTableSafe(self.items[k], true, true)
+	end
 	state.itemOrderList = copyTable(self.itemOrderList)
 	state.slotSelItemId = { }
 	for slotName, slot in pairs(self.slots) do
