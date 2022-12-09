@@ -460,6 +460,9 @@ return {
 ["warcry_speed_+%"] = {
 	mod("WarcrySpeed", "INC", nil, 0, KeywordFlag.Warcry),
 },
+["display_this_skill_cooldown_does_not_recover_during_buff"] = {
+	flag("NoCooldownRecoveryInDuration"),
+},
 -- AoE
 ["base_skill_area_of_effect_+%"] = {
 	mod("AreaOfEffect", "INC", nil),
@@ -909,24 +912,10 @@ return {
 	mod("EnemyFreezeDuration", "INC", nil),
 },
 ["base_elemental_status_ailment_duration_+%"] = {
-	mod("EnemyIgniteDuration", "INC", nil), 
-	mod("EnemyShockDuration", "INC", nil), 
-	mod("EnemyChillDuration", "INC", nil), 
-	mod("EnemyFreezeDuration", "INC", nil),
-	mod("EnemyScorchDuration", "INC", nil),
-	mod("EnemyBrittleDuration", "INC", nil),
-	mod("EnemySapDuration", "INC", nil),
+	mod("EnemyElementalAilmentDuration", "INC", nil), 
 },
 ["base_all_ailment_duration_+%"] = {
-	mod("EnemyBleedDuration", "INC", nil), 
-	mod("EnemyPoisonDuration", "INC", nil), 
-	mod("EnemyIgniteDuration", "INC", nil), 
-	mod("EnemyShockDuration", "INC", nil), 
-	mod("EnemyChillDuration", "INC", nil), 
-	mod("EnemyFreezeDuration", "INC", nil),
-	mod("EnemyScorchDuration", "INC", nil),
-	mod("EnemyBrittleDuration", "INC", nil),
-	mod("EnemySapDuration", "INC", nil),
+	mod("EnemyAilmentDuration", "INC", nil), 
 },
 ["bleeding_damage_+%"] = {
 	mod("Damage", "INC", nil, 0, KeywordFlag.Bleed),
@@ -1661,6 +1650,10 @@ return {
 },
 ["banner_area_of_effect_+%_per_stage"] = {
 	mod("AreaOfEffect", "INC", nil, 0, 0, { type = "Multiplier", var = "BannerStage" }, { type = "Condition", var = "BannerPlanted" }),
+},
+["banner_additional_base_duration_per_stage_ms"] = {
+	mod("PrimaryDuration", "BASE", nil, 0, 0, { type = "Multiplier", var = "BannerStage" }, { type = "Condition", var = "BannerPlanted" }),
+	div = 1000,
 },
 -- Other
 ["triggered_skill_damage_+%"] = {
