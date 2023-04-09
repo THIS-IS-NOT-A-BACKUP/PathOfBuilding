@@ -101,7 +101,7 @@ Requires Level 65, 148 Str
 {variant:1,2}8% of Physical Damage from Hits taken as Fire Damage
 {variant:1}Armour is increased by Uncapped Fire Resistance
 {variant:2}Armour is increased by Overcapped Fire Resistance
-{variant:3}Minion Life is increased by Overcapped Fire Resistance
+{variant:3}Minion Life is increased by their Overcapped Fire Resistance
 ]],[[
 Echoes of Creation
 Shaper Item
@@ -179,9 +179,9 @@ Implicits: 0
 {variant:1}Grants Level 20 Snipe Skill
 {variant:2}Grants Level 30 Snipe Skill
 Socketed Non-Channelling Bow Skills are Triggered by Snipe
-Socketed Triggered Bow Skills deal 40% less Damage
 +(350-500) to Accuracy Rating
 +(350-500) to Evasion Rating
+{variant:2}+2 to maximum Snipe Stages
 (14-20)% chance to Suppress Spell Damage while Channelling
 ]],[[
 Fairgraves' Tricorne
