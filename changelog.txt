@@ -1,3 +1,9 @@
+VERSION[2.31.2][2023/08/16]
+
+--- Fixed Bugs ---
+* Fix issue when importing characters (Wires77)
+* Fix typo with Ignite Stack Potential Override (Wires77)
+
 VERSION[2.31.1][2023/08/16]
 
 --- User Interface ---
