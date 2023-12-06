@@ -624,7 +624,7 @@ function ImportTabClass:ImportPassiveTreeAndJewels(json, charData)
 			end
 		end
 	end
-	self.build.spec:ImportFromNodeList(charData.classId, charData.ascendancyClass, charPassiveData.hashes, charPassiveData.skill_overrides, charPassiveData.mastery_effects or {}, latestTreeVersion .. (charData.league:match("Ruthless") and "_ruthless" or ""))
+	self.build.spec:ImportFromNodeList(charData.classId, charData.ascendancyClass, 0, charPassiveData.hashes, charPassiveData.skill_overrides, charPassiveData.mastery_effects or {}, latestTreeVersion .. (charData.league:match("Ruthless") and "_ruthless" or ""))
 	self.build.spec:AddUndoState()
 	self.build.characterLevel = charData.level
 	self.build.characterLevelAutoMode = false
@@ -1025,7 +1025,7 @@ function ImportTabClass:ImportSocketedItems(item, socketedItems, slotName)
 					itemSocketGroupList[groupID] = { label = "", enabled = true, gemList = { }, slot = slotName }
 				end
 				local socketGroup = itemSocketGroupList[groupID]
-				if not socketedItem.support and socketGroup.gemList[1] and socketGroup.gemList[1].support then
+				if not socketedItem.support and socketGroup.gemList[1] and socketGroup.gemList[1].support and item.title ~= "Dialla's Malefaction" then
 					-- If the first gemInstance is a support gemInstance, put the first active gemInstance before it
 					t_insert(socketGroup.gemList, 1, gemInstance)
 				else
