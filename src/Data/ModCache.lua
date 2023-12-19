@@ -2358,7 +2358,7 @@ c["100% increased Duration of Lightning Ailments"]={{[1]={flags=0,keywordFlags=0
 c["100% increased Effect of Buffs granted by your Golems"]={{[1]={[1]={skillType=61,type="SkillType"},flags=0,keywordFlags=0,name="BuffEffect",type="INC",value=100}},nil}
 c["100% increased Effect of Buffs your Ancestor Totems grant while Active"]={{[1]={[1]={skillNameList={[1]="Ancestral Warchief",[2]="Ancestral Protector",[3]="Earthbreaker"},type="SkillName"},flags=0,keywordFlags=0,name="BuffEffect",type="INC",value=100}},nil}
 c["100% increased Effect of Chill you inflict while Leeching Mana"]={{[1]={[1]={type="Condition",var="LeechingMana"},flags=0,keywordFlags=0,name="EnemyChillEffect",type="INC",value=100}},nil}
-c["100% increased Effect of Jewel Socket Passive Skills containing Corrupted Magic Jewels, if not from Cluster Jewels"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="corruptedMagicJewelIncEffectFromNonClusterSocket",value=100}}},nil}
+c["100% increased Effect of Jewel Socket Passive Skills containing Corrupted Magic Jewels"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="corruptedMagicJewelIncEffect",value=100}}},nil}
 c["100% increased Effect of Lightning Ailments"]={{[1]={flags=0,keywordFlags=0,name="EnemyShockEffect",type="INC",value=100},[2]={flags=0,keywordFlags=0,name="EnemySapEffect",type="INC",value=100}},nil}
 c["100% increased Effect of Onslaught on you"]={{[1]={flags=0,keywordFlags=0,name="OnslaughtEffect",type="INC",value=100}},nil}
 c["100% increased Effect of Shocks you inflict while Leeching Energy Shield"]={{[1]={[1]={type="Condition",var="LeechingEnergyShield"},flags=0,keywordFlags=0,name="EnemyShockEffect",type="INC",value=100}},nil}
@@ -2986,7 +2986,7 @@ c["150% increased Critical Strike Chance against Enemies on Consecrated Ground d
 c["150% increased Critical Strike Chance against Enemies on Full Life"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="FullLife"},flags=0,keywordFlags=0,name="CritChance",type="INC",value=150}},nil}
 c["150% increased Critical Strike Chance for Spells"]={{[1]={flags=2,keywordFlags=0,name="CritChance",type="INC",value=150}},nil}
 c["150% increased Effect of Auras from Mines"]={{[1]={flags=0,keywordFlags=8192,name="AuraEffect",type="INC",value=150}},nil}
-c["150% increased Effect of Jewel Socket Passive Skills containing Corrupted Magic Jewels, if not from Cluster Jewels"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="corruptedMagicJewelIncEffectFromNonClusterSocket",value=150}}},nil}
+c["150% increased Effect of Jewel Socket Passive Skills containing Corrupted Magic Jewels"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="corruptedMagicJewelIncEffect",value=150}}},nil}
 c["150% increased Elemental Damage if you've dealt a Critical Strike Recently"]={{[1]={[1]={type="Condition",var="CritRecently"},flags=0,keywordFlags=0,name="ElementalDamage",type="INC",value=150}},nil}
 c["150% increased Elemental Damage if you've used a Warcry Recently"]={{[1]={[1]={type="Condition",var="UsedWarcryRecently"},flags=0,keywordFlags=0,name="ElementalDamage",type="INC",value=150}},nil}
 c["150% increased Endurance, Frenzy and Power Charge Duration"]={{[1]={flags=0,keywordFlags=0,name="PowerChargesDuration",type="INC",value=150},[2]={flags=0,keywordFlags=0,name="FrenzyChargesDuration",type="INC",value=150},[3]={flags=0,keywordFlags=0,name="EnduranceChargesDuration",type="INC",value=150}},nil}
@@ -4719,6 +4719,7 @@ c["40% increased Damage with Ignite inflicted on Chilled Enemies"]={{[1]={[1]={a
 c["40% increased Defences from Equipped Shield"]={{[1]={[1]={slotName="Weapon 2",type="SlotName"},flags=0,keywordFlags=0,name="Defences",type="INC",value=40}},nil}
 c["40% increased Duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=40}},nil}
 c["40% increased Duration of Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyAilmentDuration",type="INC",value=40}},nil}
+c["40% increased Duration of Ailments you inflict while Focused"]={{[1]={[1]={type="Condition",var="Focused"},flags=0,keywordFlags=0,name="EnemyAilmentDuration",type="INC",value=40}},nil}
 c["40% increased Effect of Buffs granted by your Golems"]={{[1]={[1]={skillType=61,type="SkillType"},flags=0,keywordFlags=0,name="BuffEffect",type="INC",value=40}},nil}
 c["40% increased Effect of Chilled Ground"]={{[1]={flags=0,keywordFlags=0,name="EnemyChillEffect",type="INC",value=40}}," ed Ground "}
 c["40% increased Effect of Impales inflicted with Spells"]={{[1]={flags=0,keywordFlags=131072,name="ImpaleEffect",type="INC",value=40}},nil}
@@ -7438,7 +7439,7 @@ c["Debuffs on you expire 20% faster"]={{[1]={flags=0,keywordFlags=0,name="SelfDe
 c["Debuffs on you expire 20% faster while affected by Haste"]={nil,"Debuffs on you expire 20% faster while affected by Haste "}
 c["Debuffs on you expire 20% faster while affected by Haste You gain Onslaught for 4 seconds on Kill while affected by Haste"]={nil,"Debuffs on you expire 20% faster while affected by Haste You gain Onslaught for 4 seconds on Kill while affected by Haste "}
 c["Defences are Zero"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="MORE",value=-100},[2]={flags=0,keywordFlags=0,name="EnergyShield",type="MORE",value=-100},[3]={flags=0,keywordFlags=0,name="Evasion",type="MORE",value=-100},[4]={flags=0,keywordFlags=0,name="Ward",type="MORE",value=-100}},nil}
-c["Defences from Equipped Body Armour are doubled if it has no Socketed Gems"]={{[1]={[1]={threshold=0,type="MultiplierThreshold",upper=true,var="SocketedGemsInBody Armour"},[2]={type="Condition",var="UsingBodyArmour"},flags=0,keywordFlags=0,name="DoubleBodyArmourDefence",type="FLAG",value=true}},nil}
+c["Defences from Equipped Body Armour are doubled if it has no Socketed Gems"]={{[1]={[1]={threshold=0,type="MultiplierThreshold",upper=true,var="SocketedGemsInBody Armour"},[2]={type="Condition",var="UsingBody Armour"},flags=0,keywordFlags=0,name="DoubleBodyArmourDefence",type="FLAG",value=true}},nil}
 c["Defend with 120% of Armour against Projectile Attacks"]={nil,"Defend with 120% of Armour against Projectile Attacks "}
 c["Defend with 120% of Armour against Projectile Attacks 5% more chance to Evade Melee Attacks"]={nil,"Defend with 120% of Armour against Projectile Attacks 5% more chance to Evade Melee Attacks "}
 c["Defiance Banner has 200% increased Taunt duration"]={{[1]={[1]={skillName="Defiance Banner",type="SkillName"},flags=0,keywordFlags=0,name="Duration",type="INC",value=200}}," Taunt  "}
@@ -9988,8 +9989,8 @@ c["Shocked Enemies you Kill Explode, dealing 5% of"]={nil,"Shocked Enemies you K
 c["Shocked Enemies you Kill Explode, dealing 5% of their Life as Lightning Damage which cannot Shock"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="Shocked"},flags=0,keywordFlags=0,name="ExplodeMod",type="LIST",value={amount=5,chance=1,keyOfScaledMod="chance",type="Lightning"}},[2]={flags=0,keywordFlags=0,name="CanExplode",type="FLAG",value=true}},nil}
 c["Shocks all nearby Enemies on Killing a Shocked Enemy"]={nil,"Shocks all nearby Enemies on Killing a Shocked Enemy "}
 c["Shocks all nearby Enemies on Killing a Shocked Enemy Ignite a nearby Enemy on Killing an Ignited Enemy"]={nil,"Shocks all nearby Enemies on Killing a Shocked Enemy Ignite a nearby Enemy on Killing an Ignited Enemy "}
-c["Shocks from your Hits always increase Damage taken by at least 10%"]={{[1]={flags=0,keywordFlags=0,name="ShockBase",type="BASE",value=10}},nil}
-c["Shocks from your Hits always increase Damage taken by at least 15%"]={{[1]={flags=0,keywordFlags=0,name="ShockBase",type="BASE",value=15}},nil}
+c["Shocks from your Hits always increase Damage taken by at least 10%"]={{[1]={flags=0,keywordFlags=0,name="ShockMinimum",type="BASE",value=10}},nil}
+c["Shocks from your Hits always increase Damage taken by at least 15%"]={{[1]={flags=0,keywordFlags=0,name="ShockMinimum",type="BASE",value=15}},nil}
 c["Shocks nearby Enemies during Effect, causing 10% increased Damage taken"]={{[1]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="ShockOverride",type="BASE",value=10}},nil}
 c["Shocks you cause are reflected back to you"]={nil,"Shocks you cause are reflected back to you "}
 c["Shocks you cause are reflected back to you 60% increased Damage while Shocked"]={nil,"Shocks you cause are reflected back to you 60% increased Damage while Shocked "}

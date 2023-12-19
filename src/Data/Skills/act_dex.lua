@@ -1352,22 +1352,6 @@ skills["BladeBlastAltY"] = {
 	skillTypes = { [SkillType.Spell] = true, [SkillType.Area] = true, [SkillType.Trappable] = true, [SkillType.Mineable] = true, [SkillType.Totemable] = true, [SkillType.Damage] = true, [SkillType.Triggerable] = true, [SkillType.Multicastable] = true, [SkillType.CanRapidFire] = true, [SkillType.AreaSpell] = true, [SkillType.Physical] = true, [SkillType.Nova] = true, },
 	statDescriptionScope = "skill_stat_descriptions",
 	castTime = 0.65,
-	parts = {
-		{
-			name = "Blade Hits Per Cast",
-			stages = true,
-		},
-		{
-			name = "Blade Hits Per Sec",
-			stages = true,
-		},
-	},
-	preDamageFunc = function(activeSkill, output)
-		activeSkill.skillData.dpsMultiplier = (activeSkill.skillData.dpsMultiplier or 1) * activeSkill.skillData.dpsBaseMultiplier
-		if activeSkill.skillPart == 2 then
-			activeSkill.skillData.hitTimeOverride = 1
-		end
-	end,
 	statMap = {
 		["gain_%_of_base_dagger_damage_as_added_spell_damage"] = {
 			skill("gainPercentBaseDaggerDamage", nil),
@@ -1376,10 +1360,6 @@ skills["BladeBlastAltY"] = {
 	baseFlags = {
 		spell = true,
 		area = true,
-	},
-	baseMods = {
-		mod("Multiplier:BladeBlastofDaggerDetonationMaxStages", "BASE", 900, 0, 0),
-		skill("dpsBaseMultiplier", 1, { type = "Multiplier", var = "BladeBlastofDaggerDetonationStage" }),
 	},
 	qualityStats = {
 		Default = {
@@ -4209,7 +4189,7 @@ skills["CycloneAltX"] = {
 		else -- unarmed
 			range = activeSkill.skillModList:Sum("BASE", activeSkill.skillCfg, "UnarmedRange") + 10 * activeSkill.skillModList:Sum("BASE", activeSkill.skillCfg, "UnarmedRangeMetre")
 		end
-		activeSkill.skillModList:NewMod("Multiplier:AdditionalMeleeRange", "BASE", range, "Skill:CycloneofTumult")
+		activeSkill.skillModList:NewMod("Multiplier:AdditionalMeleeRange", "BASE", range, "Skill:CycloneAltX")
 	end,
 	statMap = {
 		["cyclone_max_number_of_stages"] = {
@@ -5367,6 +5347,11 @@ skills["DualStrikeAltX"] = {
 	},
 	statDescriptionScope = "skill_stat_descriptions",
 	castTime = 1,
+	statMap = {
+		["dual_strike_off_hand_weapon_determines_attack_time"] = {
+			flag("UseOffhandAttackSpeed"),
+		},
+	},
 	baseFlags = {
 		attack = true,
 		melee = true,
@@ -6913,10 +6898,10 @@ skills["FlamethrowerTrap"] = {
 		{
 			name = "One trap (bad placement)",
 		},
-		{ 
+		{
 			name = "Average # traps (good placement)",
 		},
-		{ 
+		{
 			name = "Average # traps (bad placement)",
 		},
 	},
@@ -7606,10 +7591,36 @@ skills["FrostBladesAltX"] = {
 	},
 	statDescriptionScope = "skill_stat_descriptions",
 	castTime = 1,
+	parts = {
+		{
+			name = "Melee Hit",
+			attack = true,
+			melee = true,
+			projectile = true,
+			area = false,
+		},
+		{
+			name = "Ground DoT",
+			attack = false,
+			melee = false,
+			projectile = false,
+			area = true,
+		},
+	},
+	statMap = {
+		["base_cold_damage_to_deal_per_minute"] = {
+			skill("ColdDot", nil, { type = "SkillPart", skillPart = 2 }),
+			div = 60,
+		},
+	},
 	baseFlags = {
 		attack = true,
 		melee = true,
 		projectile = true,
+		area = true,
+	},
+	baseMods = {
+		skill("dotIsArea", true, { type = "SkillPart", skillPart = 2 }),
 	},
 	qualityStats = {
 		Default = {
@@ -9163,7 +9174,7 @@ skills["LancingSteel"] = {
 			local percentReducedProjectiles = (output.ProjectileCount - 1) / output.ProjectileCount
 			local mult = (activeSkill.skillModList:More(activeSkill.skillCfg, "LancingSteelSubsequentDamage") - 1) * 100 * percentReducedProjectiles
 			activeSkill.skillData.dpsMultiplier = output.ProjectileCount
-			activeSkill.skillModList:NewMod("Damage", "MORE", mult, "Skill:LancingSteel", ModFlag.Hit)
+			activeSkill.skillModList:NewMod("Damage", "MORE", mult, "Skill:LancingSteel")
 		end
 	end,
 	parts = {
@@ -9270,7 +9281,7 @@ skills["LancingSteelAltX"] = {
 			local percentReducedProjectiles = (output.ProjectileCount - 1) / output.ProjectileCount
 			local mult = (activeSkill.skillModList:More(activeSkill.skillCfg, "LancingSteelSubsequentDamage") - 1) * 100 * percentReducedProjectiles
 			activeSkill.skillData.dpsMultiplier = output.ProjectileCount
-			activeSkill.skillModList:NewMod("Damage", "MORE", mult, "Skill:LancingSteelofSpraying", ModFlag.Hit)
+			activeSkill.skillModList:NewMod("Damage", "MORE", mult, "Skill:LancingSteelAltX")
 		end
 	end,
 	parts = {
@@ -11952,7 +11963,7 @@ skills["ScourgeArrow"] = {
 			name = "Release",
 			stages = true,
 		},
-		{ 
+		{
 			name = "Thorn Arrows",
 			stages = true,
 		},
@@ -16240,7 +16251,7 @@ skills["Tornado"] = {
 	statMap = {
 		["tornado_base_damage_interval_ms"] = {
 			skill("damageInterval", nil ),
-			div = 1000, 
+			div = 1000,
 		},
 	},
 	baseFlags = {

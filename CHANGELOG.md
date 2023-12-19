@@ -1,5 +1,75 @@
 # Changelog
 
+## [v2.38.3](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.38.3) (2023/12/19)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.38.2...v2.38.3)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+
+### Fixed Crashes
+- Fix crash when checking the breakdown for Transfigured Eye of Winter and Infernal Blow [\#7116](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7116) ([LocalIdentity](https://github.com/LocalIdentity))
+
+### Fixed Bugs
+- Fix Oath of the Magi not working for Body Armour slot [\#7109](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7109) ([sida-wang](https://github.com/sida-wang))
+- Fix Lancing Steel less damage multiplier only applying to Hits [\#7114](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7114) ([deathbeam](https://github.com/deathbeam))
+
+### Other change
+- Update The Adorned to work in Cluster Jewel sockets [\#7113](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7113) ([LocalIdentity](https://github.com/LocalIdentity))
+
+
+
+
+## [v2.38.2](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.38.2) (2023/12/19)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.38.1...v2.38.2)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+
+### Fixed Bugs
+- Fix Bodyswap of Sacrifice explosion not scaling correctly [\#7104](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7104) ([LocalIdentity](https://github.com/LocalIdentity))
+
+
+
+## [v2.38.1](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.38.1) (2023/12/18)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.38.0...v2.38.1)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+
+### User Interface
+- Fix tooltip for Summon Chaos Golem of the Maelstrom [\#7075](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7075) ([QuickStick123](https://github.com/QuickStick123))
+- Fix Blade Blast of Dagger Detonation having a stages box [\#7095](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7095) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix "Cast on Frostbolt" config not showing for Ice Nova of Frostbolts [\#7065](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7065) ([LocalIdentity](https://github.com/LocalIdentity))
+
+### Fixed Crashes
+- Fix crash when importing some builds [\#7085](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7085) ([Paliak](https://github.com/Paliak))
+
+### Fixed Bugs
+- Fix Flicker Strike DPS being limited by cooldown [\#7078](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7078) ([sida-wang](https://github.com/sida-wang))
+- Fix Replica Dragonfang's Flight not affecting Transfigured gems [\#7101](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7101) ([Paliak](https://github.com/Paliak))
+- Fix Lacerate of Haemorrhage "more damage with Bleeding" using increased [\#7072](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7072) ([sida-wang](https://github.com/sida-wang))
+- Fix The Adorned not applying to jewels in outer tree sockets [\#7086](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7086) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix The Adorned applying to abyss jewels in gear [\#7086](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7086) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Frost Blades of Katabasis DoT not being scaled by area damage [\#7094](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7094) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Dual Strike of Ambidexterity not using offhand attack time [\#7097](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7097) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Vaal gems loading incorrect variant after reopening a build [\#7082](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7082) ([sida-wang](https://github.com/sida-wang))
+- Fix Pyroclast Mine aura not affecting the damage of other skills [\#7084](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7084) ([sida-wang](https://github.com/sida-wang))
+- Fix gem mods on Forbidden Shako not working correctly with Utula's Hunger [\#7087](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7087) ([sida-wang](https://github.com/sida-wang))
+- Fix "damage taken by at least x%" Ailment mods not stacking [\#7093](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7093) ([LocalIdentity](https://github.com/LocalIdentity))
+
+### Accuracy Improvements
+- Fix Devouring Diadem using legacy Ailment duration mod [\#7077](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7077) ([sida-wang](https://github.com/sida-wang))
+- Fix Catalysts not working correctly on Replica Dragonfang's Flight [\#7074](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7074) ([sida-wang](https://github.com/sida-wang))
+- Revert preferred slot for Unseen Strike [\#7085](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7085) ([Paliak](https://github.com/Paliak))
+
+
+
 ## [v2.38.0](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.38.0) (2023/12/18)
 
 [Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.37.0...v2.38.0)

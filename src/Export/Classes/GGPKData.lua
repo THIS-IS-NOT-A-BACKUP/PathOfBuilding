@@ -218,6 +218,9 @@ function GGPKClass:GetNeededFiles()
 		"Data/azmerifeaturerooms.dat",
 		"Data/corpsetypetags.dat",
 		"Data/itemisedcorpse.dat",
+		"Data/indexableskillgems.dat",
+		"Data/indexablesupportgems.dat",
+		"Data/itemclasscategories.dat",
 	}
 	local txtFiles = {
 		"Metadata/StatDescriptions/passive_skill_aura_stat_descriptions.txt",
