@@ -39,6 +39,7 @@ local GemSelectClass = newClass("GemSelectControl", "EditControl", function(self
 	self.gemChangeFunc = changeFunc
 	self.forceTooltip = forceTooltip
 	self.list = { }
+	self.mode = ""
 	self.changeFunc = function()
 		if not self.dropped then
 			self.dropped = true
@@ -96,7 +97,6 @@ function GemSelectClass:CalcOutputWithThisGem(calcFunc, gemData, qualityId)
 		gemInstance.displayEffect = oldGem.displayEffect
 	else
 		gemList[self.index] = nil
-		calcFunc({ }, { allocNodes = true, requirementsItems = true })
 	end
 
 	return output, gemInstance
@@ -109,18 +109,21 @@ function GemSelectClass:PopulateGemList()
 	local showNormal = self.skillsTab.showSupportGemTypes == "NORMAL"
 	local matchLevel = self.skillsTab.defaultGemLevel == "characterLevel"
 	local characterLevel = self.skillsTab.build and self.skillsTab.build.characterLevel or 1
+
 	for gemId, gemData in pairs(self.skillsTab.build.data.gems) do
-		local levelRequirement = gemData.grantedEffect.levels[1].levelRequirement or 1
-		if characterLevel >= levelRequirement or not matchLevel then
-			if (showAwakened or showAll) and gemData.grantedEffect.plusVersionOf then
-				self.gems["Default:" .. gemId] = gemData
-			elseif showNormal or showAll then
-				if self.skillsTab.showAltQualityGems and (self.skillsTab.defaultGemQuality or 0) > 0 then
-					for _, altQual in ipairs(self.skillsTab:getGemAltQualityList(gemData)) do
-						self.gems[altQual.type .. ":" .. gemId] = gemData
-					end
-				else
+		if (self.sortGemsBy and gemData.tags[self.sortGemsBy] == true or not self.sortGemsBy) then
+			local levelRequirement = gemData.grantedEffect.levels[1].levelRequirement or 1
+			if characterLevel >= levelRequirement or not matchLevel then
+				if (showAwakened or showAll) and gemData.grantedEffect.plusVersionOf then
 					self.gems["Default:" .. gemId] = gemData
+				elseif showNormal or showAll then
+					if self.skillsTab.showAltQualityGems and (self.skillsTab.defaultGemQuality or 0) > 0 then
+						for _, altQual in ipairs(self.skillsTab:getGemAltQualityList(gemData)) do
+							self.gems[altQual.type .. ":" .. gemId] = gemData
+						end
+					else
+						self.gems["Default:" .. gemId] = gemData
+					end
 				end
 			end
 		end
@@ -146,7 +149,8 @@ function GemSelectClass:BuildList(buf)
 
 	self.controls.scrollBar.offset = 0
 	wipeTable(self.list)
-	self.searchStr = buf
+	self.searchStr = buf .. self.mode
+	self.mode = ""
 	if #self.searchStr > 0 then
 		local added = { }
 
@@ -240,8 +244,9 @@ end
 function GemSelectClass:UpdateSortCache()
 	--local start = GetTime()
 	local sortCache = self.sortCache
+	local sameSortBy = self.sortGemsBy == self.lastSortGemsBy
 	-- Don't update the cache if no settings have changed that would impact the ordering
-	if sortCache and sortCache.socketGroup == self.skillsTab.displayGroup and sortCache.gemInstance == self.skillsTab.displayGroup.gemList[self.index]
+	if sameSortBy and sortCache and sortCache.socketGroup == self.skillsTab.displayGroup and sortCache.gemInstance == self.skillsTab.displayGroup.gemList[self.index]
 		and sortCache.outputRevision == self.skillsTab.build.outputRevision and sortCache.defaultLevel == self.skillsTab.defaultGemLevel
 		and (sortCache.characterLevel == self.skillsTab.build.characterLevel or self.skillsTab.defaultGemLevel ~= "characterLevel")
 		and sortCache.defaultQuality == self.skillsTab.defaultGemQuality and sortCache.sortType == self.skillsTab.sortGemsByDPSField
@@ -249,10 +254,11 @@ function GemSelectClass:UpdateSortCache()
 		return
 	end
 
-	if not sortCache or (sortCache.considerAlternates ~= self.skillsTab.showAltQualityGems or sortCache.considerGemType ~= self.skillsTab.showSupportGemTypes
+	if not sameSortBy or not sortCache or (sortCache.considerAlternates ~= self.skillsTab.showAltQualityGems or sortCache.considerGemType ~= self.skillsTab.showSupportGemTypes
 		or sortCache.defaultQuality ~= self.skillsTab.defaultGemQuality
 		or sortCache.defaultLevel ~= self.skillsTab.defaultGemLevel
 		or (sortCache.characterLevel ~= self.skillsTab.build.characterLevel and self.skillsTab.defaultGemLevel == "characterLevel")) then
+		self.lastSortGemsBy = self.sortGemsBy
 		self:PopulateGemList()
 	end
 
@@ -341,6 +347,7 @@ function GemSelectClass:UpdateSortCache()
 			sortCache.dpsColor[gemId] = "^xFFFF66"
 		end
 	end
+
 	--ConPrintf("Gem Selector time: %d ms", GetTime() - start)
 end
 
@@ -496,7 +503,7 @@ function GemSelectClass:Draw(viewPort, noTooltip)
 		end
 		if mOver and (not self.skillsTab.selControl or self.skillsTab.selControl._className ~= "GemSelectControl" or not self.skillsTab.selControl.dropped) and (not noTooltip or self.forceTooltip) then
 			local gemInstance = self.skillsTab.displayGroup.gemList[self.index]
-			SetDrawLayer(nil, 10)
+			local cursorX, cursorY = GetCursorPos()
 			self.tooltip:Clear()
 			if gemInstance and gemInstance.gemData then
 				-- Check valid qualityId, set to 'Default' if missing
@@ -507,6 +514,39 @@ function GemSelectClass:Draw(viewPort, noTooltip)
 			else
 				self.tooltip:AddLine(16, toolTipText)
 			end
+
+			colorS = 0.5
+			colorA = 0.5
+			if cursorX > (x + width - 18) then
+				colorS = 1
+				self.tooltip:Clear()
+				self.tooltip:AddLine(16, "Only show Support gems")
+			elseif (cursorX > (x + width - 40) and cursorX < (cursorX + width - 20)) then
+				colorA = 1
+				self.tooltip:Clear()
+				self.tooltip:AddLine(16, "Only show Active gems")
+			end
+
+			-- support shortcut
+			sx = x + width - 16 - 2
+			SetDrawColor(colorS,colorS,colorS)
+			DrawImage(nil, sx, y, 16, height)
+			SetDrawColor(0,0,0)
+			DrawImage(nil, sx+1, y+2, 16-2, height-4)
+			SetDrawColor(colorS,colorS,colorS)
+			DrawString(sx + 8, y, "CENTER_X", height - 2, "VAR", "S")
+
+			-- active shortcut
+			sx = x + width - (16*2) - (2*2)
+			SetDrawColor(colorA,colorA,colorA)
+			DrawImage(nil, sx, y, 16, height)
+			SetDrawColor(0,0,0)
+			DrawImage(nil, sx+1, y+2, 16-2, height-4)
+			SetDrawColor(colorA,colorA,colorA)
+			DrawString(sx + 8, y, "CENTER_X", height - 2, "VAR", "A")
+
+
+			SetDrawLayer(nil, 10)
 			self.tooltip:Draw(x, y, width, height, viewPort)
 			SetDrawLayer(nil, 0)
 		end
@@ -713,6 +753,23 @@ function GemSelectClass:OnKeyDown(key, doubleClick)
 	if not self:IsShown() or not self:IsEnabled() then
 		return
 	end
+
+	-- for filter overlay buttons
+	local x, y = self:GetPos()
+	local width, height = self:GetSize()
+	local cursorX, cursorY = GetCursorPos()
+	-- constrain cursor to the height of the control
+	if key == "LEFTBUTTON" and (cursorY > y and cursorY < (y + height)) then
+		-- no need to constrain right side of the S overlay as that's outside hover
+		if cursorX > (x + width - 18) then
+			self.sortGemsBy = "support" -- only need to change sortBy, code will continue to UpdateSortCache
+		elseif (cursorX > (x + width - 40) and cursorX < (cursorX + width - 20)) then
+			self.sortGemsBy = "grants_active_skill"
+		else
+			self.sortGemsBy = nil
+		end
+	end
+
 	local mOverControl = self:GetMouseOverControl()
 	if mOverControl and mOverControl.OnKeyDown then
 		self.selControl = mOverControl
