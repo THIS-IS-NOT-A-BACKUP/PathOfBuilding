@@ -1,5 +1,66 @@
 # Changelog
 
+## [v2.47.2](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.47.2) (2024/07/29)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.47.1...v2.47.2)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+### Fixed Calculations
+- Fix Block Chance calculation ([LocalIdentity](https://github.com/LocalIdentity))
+
+## [v2.47.1](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.47.1) (2024/07/29)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.47.0...v2.47.1)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+### Fixed Calculations
+- Fix Added Damage not applying to Monster Explosions [\#8008](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8008) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Poison stacks applying twice to Poison DPS [\#8007](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8007) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix damage calculation when using both Autoexertion and Echoes of Creation [\#8006](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8006) ([LocalIdentity](https://github.com/LocalIdentity))
+### Fixed Behaviours
+- Fix increased Chance to Block mod on Shields not working [\#8010](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8010) ([LocalIdentity](https://github.com/LocalIdentity))
+
+
+
+## [v2.47.0](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.47.0) (2024/07/29)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.46.0...v2.47.0)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+### New to Path of Building
+- Update Gems, Item bases, Mods and Minions [\#7970](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7970) ([Wires77](https://github.com/Wires77), [Regisle](https://github.com/Regisle), [Nostrademous](https://github.com/Nostrademous), [LocalIdentity](https://github.com/LocalIdentity))
+- Add support for new 3.25 Gems [\#7988](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7988) ([LocalIdentity](https://github.com/LocalIdentity))
+- Add support for new 3.25 Uniques [\#8000](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8000), [\#7993](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7993) ([Paliak](https://github.com/Paliak), [Nostrademous](https://github.com/Nostrademous), [LocalIdentity](https://github.com/LocalIdentity))
+- Add support for Warcries to affect Minions [\#7960](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7960) ([Regisle](https://github.com/Regisle))
+- Add support for Echoes of Creation [\#7999](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7999) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix numerous issues in bleed calculations [\#7771](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7771) ([CelestiaTheDryad](https://github.com/CelestiaTheDryad))
+### Fixed Crashes
+- Fix crash when importing a build where empty configs were not loaded properly [\#7996](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7996) ([Wires77](https://github.com/Wires77))
+### User Interface
+- Remove remote build list functionality pending redesign [\#7995](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7995) ([Wires77](https://github.com/Wires77))
+- Fix breakdown for DoT Multiplier [\#7969](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7969) ([Rybadour](https://github.com/Rybadour))
+### Fixed Calculations
+- Fix DoT Multi when using Maligaro's Virtuosity and Perfect Agony [\#7965](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7965) ([DieMango](https://github.com/DieMango))
+- Fix Scorch chance on Crit when using Warden's Oath of Summer [\#7975](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7975) ([ConnorThelin](https://github.com/ConnorThelin))
+- Fix Gladiator Determined Survivor Shield Block calculation [\#7979](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7979) ([Regisle](https://github.com/Regisle))
+- Fix Ignite divide by 0 error [\#7954](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7954) ([NL908](https://github.com/NL908))
+### Fixed Behaviours
+- Fix Quality on Tinctures to apply More effect instead of Increased [\#7967](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7967) ([nexus671](https://github.com/nexus671))
+- Fix non-instant Life Leech incorrectly applying with Strength of Blood [\#7937](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7937) ([greatnameincoming](https://github.com/greatnameincoming))
+- Fix Ravenous Passion helmet not granting Spell damage from Rage [\#7936](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7936) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Rallying Cry Exerted damage mod incorrectly working with Autoexertion [\#8001](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8001) ([LocalIdentity](https://github.com/LocalIdentity))
+- Improve Militant Faith Notable Protection [\#7990](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7990) ([Peechey](https://github.com/Peechey))
+### Accuracy Improvements
+- Fix Dark Seer missing global Chance to Blind on Hit [\#7950](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/7950) ([NL908](https://github.com/NL908))
+- Add tag to Legacy Watchers eye mods [\#8002](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8002) ([LocalIdentity](https://github.com/LocalIdentity))
+
+
 ## [v2.46.0](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.46.0) (2024/07/25)
 
 [Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.45.0...v2.46.0)
