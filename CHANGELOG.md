@@ -1,5 +1,26 @@
 # Changelog
 
+## [v2.49.2](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.49.2) (2024/11/19)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.49.1...v2.49.2)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+### User Interface
+- Validate discriminator is in account name on import [\#8366](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8366) ([Regisle](https://github.com/Regisle))
+
+
+## [v2.49.1](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.49.1) (2024/11/19)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.49.0...v2.49.1)
+
+<!-- Release notes generated using configuration in .github/release.yml at dev -->
+
+## What's Changed
+### Fixed Bugs
+- Fix character import for Xbox and Playstation accounts [\#8365](https://github.com/PathOfBuildingCommunity/PathOfBuilding/pull/8365) ([HashBR](https://github.com/HashBR))
+
 ## [v2.49.0](https://github.com/PathOfBuildingCommunity/PathOfBuilding/tree/v2.49.0) (2024/11/18)
 
 [Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding/compare/v2.48.2...v2.49.0)
