@@ -1,3 +1,39 @@
+VERSION[2.52.2][2025/02/20]
+
+--- Fixed Crashes ---
+* Fix Tawhoa's Chosen crash when no active skill is enabled (Paliak)
+
+--- User Interface ---
+* Dynamically expand some dropdowns that were too narrow to read (Wires77)
+
+--- Fixed Behaviours ---
+* Fix Forbidden jewels not finding the right ascendancy nodes (Wires77)
+* Update tree data with missing cluster jewel nodes (Wires77)
+
+
+VERSION[2.52.1][2025/02/20]
+
+--- Fixed Bugs ---
+Fixed update error (Wires77)
+
+VERSION[2.52.0][2025/02/20]
+
+--- New to Path of Building ---
+* Add tree for Legacy of Phrecia (Wires77)
+* Add checkbox for Sacrificial Zeal (Paliak)
+* Add black background to detail text in character dropdown (Paliak)
+* Add Molten Strike (+Zenith) ball average overlap calculations (andyli00)
+
+--- Fixed Behaviours ---
+* Fix Firestorm of Pelting skill effect duration (Peechey)
+
+--- Accuracy Improvements ---
+* Fix Eyes of the Greatwolf DoT Multi wording (henbe)
+* Fix influences not importing correctly (Wires77)
+
+--- Fixed Calculations ---
+* Fix several bugs with infinite EHP and wrong phys max hit (Edvinas-Smita)
+
 VERSION[2.51.0][2025/02/14]
 
 --- New to Path of Building ---
