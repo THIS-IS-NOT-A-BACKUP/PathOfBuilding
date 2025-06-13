@@ -74,7 +74,10 @@ function main:Init()
 	self.datFileByName = { }
 
 	self:LoadSettings()
-
+	self.reExportGGPKData = false
+	if IsKeyDown("CTRL") then
+		self.reExportGGPKData = true
+	end
 	self:InitGGPK()
 	if self.datSource then
 		if USE_DAT64 then
@@ -192,6 +195,21 @@ function main:Init()
 		end
 	}
 
+	self.controls.clearOutput = new("ButtonControl", nil, {1190, 10, 100, 18}, "Clear", function()
+		wipeTable(self.scriptOutput)
+	end) {
+		shown = function()
+			return not self.curDatFile 
+		end,
+		enabled = function()
+			return #self.scriptOutput > 0
+		end
+	}
+	self.controls.clearAutoClearOutput = new("CheckBoxControl", { "TOPLEFT", self.controls.clearOutput, "BOTTOMLEFT" }, { 120, 10, 20, 20 }, "Auto Clear Output:", function(state)
+		self.clearAutoClearOutput = state
+	end, nil, false)
+	self.controls.helpText = new("LabelControl", {"TOPLEFT",self.controls.clearOutput,"BOTTOMLEFT"}, {0, 42, 100, 16}, "Press Ctrl+F5 to re-export\ndata from the game")
+
 	self.controls.scriptList = new("ScriptListControl", nil, {270, 35, 100, 300}) {
 		shown = function()
 			return not self.curDatFile
@@ -203,7 +221,12 @@ function main:Init()
 		end
 	}
 
-	self.controls.datList = new("DatListControl", nil, {10, 70, 250, function() return self.screenH - 70 end})
+	self.controls.datSearch = new("EditControl", {"TOPLEFT", self.controls.datSource, "BOTTOMLEFT"}, {0, 2, 250, 18}, nil, "^7Search", nil, nil, function(buf)
+		self.controls.datList.searchBuf = buf
+		self.controls.datList:BuildFilteredList()
+	end, nil, nil, true)
+
+	self.controls.datList = new("DatListControl", {"TOPLEFT",self.controls.datSearch,"BOTTOMLEFT"}, {0, 2, 250, function() return self.screenH - 100 end})
 
 	self.controls.specEditToggle = new("ButtonControl", nil, {270, 10, 100, 18}, function() return self.editSpec and "Done <<" or "Edit >>" end, function()
 		self.editSpec = not self.editSpec
@@ -300,6 +323,7 @@ function main:Init()
 	}
 	self.controls.filter.tooltipText = "Takes a Lua expression that returns true or false for a row.\nE.g. `Id:match(\"test\")` or for a key column, `Col and Col.Id:match(\"test\")`"
 	self.controls.filterError = new("LabelControl", {"LEFT",self.controls.filter,"RIGHT"}, {4, 2, 0, 14}, "")
+	self.controls.showRaw = new("LabelControl", {"LEFT",self.controls.filter,"RIGHT"}, {600, 2, 0, 14}, "^7Hold ALT to show raw data.")
 
 	self.controls.rowList = new("RowListControl", nil, {270, 0, 0, 0}) {
 		y = function()
@@ -334,10 +358,14 @@ end
 
 function main:LoadDatSource(value)
 	self.leagueLabel = nil
-	local out = io.open(self.datSource.spec..(self.datSource.spec:match("%.lua$") and "" or ".lua"), "w")
-	out:write('return ')
-	writeLuaTable(out, self.datSpecs, 1)
-	out:close()
+	local reExportState = self.reExportGGPKData
+	self.reExportGGPKData = true
+	if self.datSource then
+		local out = io.open(self.datSource.spec..(self.datSource.spec:match("%.lua$") and "" or ".lua"), "w")
+		out:write('return ')
+		writeLuaTable(out, self.datSpecs, 1)
+		out:close()
+	end
 	self.datSource = value
 	self.datSpecs = LoadModule(self.datSource.spec)
 	self:InitGGPK()
@@ -349,6 +377,7 @@ function main:LoadDatSource(value)
 	if self.datFileByName["leaguenames"] then
 		self.leagueLabel = self.datFileByName["leaguenames"]:ReadValueText({ type = "String" }, self.datFileByName["leaguenames"].rows[2] + 8)
 	end
+	self.reExportGGPKData = reExportState
 end
 
 function main:OpenPathPopup()
@@ -407,6 +436,19 @@ function main:OnFrame()
 end
 
 function main:OnKeyDown(key, doubleClick)
+	-- Ctrl+F shortcut for focusing dat file Search
+	if key == "f" and IsKeyDown("CTRL") then
+		if self.controls and self.controls.datSearch and self.SelectControl then
+			self:SelectControl(self.controls.datSearch)
+		end
+		return
+	-- ESC key closes Dat window so that the script menu is shown.
+	elseif key == "ESCAPE" then
+		if self.controls and self.controls.scripts and self.SelectControl then
+			self:SetCurrentDat()
+		end
+		return
+	end
 	t_insert(self.inputEvents, { type = "KeyDown", key = key, doubleClick = doubleClick })
 end
 
@@ -430,10 +472,10 @@ function main:InitGGPK()
 		local now = GetTime()
 		local ggpkPath = self.datSource.ggpkPath
 		if ggpkPath and ggpkPath ~= "" then
-			self.ggpk = new("GGPKData", ggpkPath)
+			self.ggpk = new("GGPKData", ggpkPath, nil, self.reExportGGPKData)
 			ConPrintf("GGPK: %d ms", GetTime() - now)
 		elseif self.datSource.datFilePath then
-			self.ggpk = new("GGPKData", nil, self.datSource.datFilePath)
+			self.ggpk = new("GGPKData", nil, self.datSource.datFilePath, self.reExportGGPKData)
 			ConPrintf("GGPK: %d ms", GetTime() - now)
 		end
 	end
@@ -520,7 +562,7 @@ function main:LoadSettings()
 	end
 	for _, node in ipairs(setXML[1]) do
 		if type(node) == "table" then
-			if node.elem == "DatSource" then
+			if node.elem == "DatSource" and (node.attrib.ggpkPath or node.attrib.path) and node.attrib.datFilePath then
 				self.datSource = self.datSource or { }
 				self.datSource.ggpkPath = node.attrib.ggpkPath or node.attrib.path
 				self.datSource.datFilePath = node.attrib.datFilePath
@@ -530,18 +572,19 @@ function main:LoadSettings()
 			if node.elem == "DatSources" then
 				self.datSources = self.datSources or { }
 				for _, child in ipairs(node) do
-					t_insert(self.datSources, { ggpkPath = child.attrib.ggpkPath, datFilePath = child.attrib.datFilePath, label = child.attrib.label, spec = child.attrib.spec })
+					if (child.attrib.ggpkPath or child.attrib.path) and child.attrib.datFilePath then
+						t_insert(self.datSources, { ggpkPath = child.attrib.ggpkPath, datFilePath = child.attrib.datFilePath, label = child.attrib.label, spec = child.attrib.spec })
+					end
 				end
 			end
 		end
 	end
-	if type(self.datSources) ~= "table" then
-		self.datSources = { }
-	end
-	if not next(self.datSources) then
+	if self.datSources and not next(self.datSources) and self.datSource then
 		t_insert(self.datSources, self.datSource)
 	end
-	self.datSource = self.datSource or self.datSources[1]
+	if not self.datSource and self.datSources then
+		self.datSource = self.datSources[1]
+	end
 end
 
 function main:SaveSettings()
