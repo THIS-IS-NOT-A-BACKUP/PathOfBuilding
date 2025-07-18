@@ -62,7 +62,6 @@ function calcs.initModDB(env, modDB)
 	modDB:NewMod("DamageTaken", "INC", 10, "Base", ModFlag.Spell, { type = "Condition", var = "Unnerved"})
 	modDB:NewMod("DamageTaken", "INC", 10, "Base", ModFlag.Spell, { type = "Condition", var = "Unnerved", neg = true}, { type = "Condition", var = "Party:Unnerved"})
 	modDB:NewMod("Damage", "MORE", -10, "Base", { type = "Condition", var = "Debilitated"}, { type = "GlobalEffect", effectName = "Debilitated", effectType = "Debuff"})
-	modDB:NewMod("DotMultiplier", "BASE", 50, "Base", { type = "Condition", var = "CriticalStrike" })
 	modDB:NewMod("MovementSpeed", "MORE", -20, "Base", { type = "Condition", var = "Debilitated"}, { type = "GlobalEffect", effectName = "Debilitated", effectType = "Debuff"})
 	modDB:NewMod("Condition:Burning", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "Condition", var = "Ignited" })
 	modDB:NewMod("Condition:Poisoned", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "MultiplierThreshold", var = "PoisonStack", threshold = 1 })
@@ -110,17 +109,7 @@ function calcs.buildModListForNode(env, node)
 	if node.type == "Keystone" then
 		modList:AddMod(node.keystoneMod)
 	else
-		-- Apply effect scaling
-		local scale = calcLib.mod(node.modList, nil, "PassiveSkillEffect")
-		if scale ~= 1 then
-			local combinedList = new("ModList")
-			for _, mod in ipairs(node.modList) do
-				combinedList:MergeMod(mod)
-			end
-			modList:ScaleAddList(combinedList, scale)
-		else
-			modList:AddList(node.modList)
-		end
+		modList:AddList(node.modList)
 	end
 
 	-- Run first pass radius jewels
@@ -132,6 +121,14 @@ function calcs.buildModListForNode(env, node)
 
 	if modList:Flag(nil, "PassiveSkillHasNoEffect") or (env.allocNodes[node.id] and modList:Flag(nil, "AllocatedPassiveSkillHasNoEffect")) then
 		wipeTable(modList)
+	end
+
+	-- Apply effect scaling
+	local scale = calcLib.mod(modList, nil, "PassiveSkillEffect")
+	if scale ~= 1 then
+		local scaledList = new("ModList")
+		scaledList:ScaleAddList(modList, scale)
+		modList = scaledList
 	end
 
 	-- Run second pass radius jewels
@@ -486,6 +483,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 		modDB:NewMod("Evasion", "BASE", 15, "Base")
 		modDB:NewMod("Accuracy", "BASE", 2, "Base", { type = "Multiplier", var = "Level", base = -2 })
 		modDB:NewMod("CritMultiplier", "BASE", 50, "Base")
+		modDB:NewMod("DotMultiplier", "BASE", 50, "Base", { type = "Condition", var = "CriticalStrike" })
 		modDB:NewMod("FireResist", "BASE", env.configInput.resistancePenalty or -60, "Base")
 		modDB:NewMod("ColdResist", "BASE", env.configInput.resistancePenalty or -60, "Base")
 		modDB:NewMod("LightningResist", "BASE", env.configInput.resistancePenalty or -60, "Base")
