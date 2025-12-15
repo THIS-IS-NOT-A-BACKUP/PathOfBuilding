@@ -35,7 +35,7 @@ jobs:
               pull_number: process.env.PR_NUMBER
             });
             const labels = pr.data.labels.map(l => l.name).join(',');
-            return {
+            return JSON.stringify({
               patch_url: pr.data.patch_url,
               msg: `Apply changes from ${pr.data.html_url}`,
               id: pr.data.number,
@@ -43,7 +43,7 @@ jobs:
               labels,
               name: pr.data.user.name || pr.data.user.login,
               user: pr.data.user.login,
-            };
+            });
 
       - name: Notify PathOfBuilding-PoE2 repo
         uses: peter-evans/repository-dispatch@v3
