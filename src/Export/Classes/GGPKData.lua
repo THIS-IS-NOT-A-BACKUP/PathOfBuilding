@@ -63,49 +63,44 @@ function GGPKClass:ExtractFilesWithBun(fileListStr, useRegex)
 	os.execute(cmd)
 end
 
+-- Use manifest files to avoid command line limit and reduce cmd calls
+function GGPKClass:ExtractFilesWithBunFromTable(fileTable, useRegex)
+	local useRegex = useRegex or false
+	local manifest = self.oozPath .. "extract_list.txt"
+	local f = assert(io.open(manifest, "w"))
+	for _, fname in ipairs(fileTable) do
+		f:write(string.lower(fname), "\n")
+	end
+	f:close()
+	local cmd = 'cd "' .. self.oozPath .. '" && bun_extract_file.exe extract-files ' .. (useRegex and '--regex "' or '"') .. self.path .. '" . < "' .. manifest .. '"'
+	ConPrintf(cmd)
+	os.execute(cmd)
+	os.remove(manifest)
+end
+
 function GGPKClass:ExtractFiles(reExport)
 	if reExport then
 		local datList, txtList, otList, itList = self:GetNeededFiles()
-		local sweetSpotCharacter = 6000
-		local fileList = ''
+		local datFiles = {}
 		for _, fname in ipairs(datList) do
-			if USE_DAT64 then
-				fileList = fileList .. '"' .. fname .. 'c64" '
-			else
-				fileList = fileList .. '"' .. fname .. '" '
-			end
-
-			if fileList:len() > sweetSpotCharacter then
-				self:ExtractFilesWithBun(fileList)
-				fileList = ''
-			end
-		end
-		
-		for _, fname in ipairs(otList) do
-			self:ExtractFilesWithBun('"' .. fname .. '"', true)
+			datFiles[#datFiles + 1] = fname .. "c64"
 		end
 
-		for _, fname in ipairs(txtList) do
-			fileList = fileList .. '"' .. fname .. '" '
-
-			if fileList:len() > sweetSpotCharacter then
-				self:ExtractFilesWithBun(fileList)
-				fileList = ''
-			end
+		-- non-regex chunk: dat files + txtList + itList
+		for i = 1, #txtList do
+			datFiles[#datFiles + 1] = itList[i]
 		end
-
-		for _, fname in ipairs(itList) do
-			fileList = fileList .. '"' .. fname .. '" '
-
-			if fileList:len() > sweetSpotCharacter then
-				self:ExtractFilesWithBun(fileList)
-				fileList = ''
-			end
+		for i = 1, #itList do
+			datFiles[#datFiles + 1] = itList[i]
 		end
+		self:ExtractFilesWithBunFromTable(datFiles, false)
 
-		if (fileList:len() > 0) then
-			self:ExtractFilesWithBun(fileList)
+		-- regex chunk: otList
+		local regexFiles = {}
+		for i = 1, #otList do
+			regexFiles[#regexFiles + 1] = otList[i]
 		end
+		self:ExtractFilesWithBunFromTable(regexFiles, true)
 	end
 
 	-- Overwrite Enums
@@ -117,39 +112,16 @@ end
 
 function GGPKClass:ExtractList(listToExtract, cache, useRegex)
 	useRegex = useRegex or false
-	local sweetSpotCharacter = 6000
 	printf("Extracting ...")
-	local fileList = ''
+	local fileTable = {}
 	for _, fname in ipairs(listToExtract) do
 		-- we are going to validate if the file is already extracted in this session
 		if not cache[fname] then
 			cache[fname] = true
-			fileList = fileList .. '"' .. string.lower(fname) .. '" '
-
-			if fileList:len() > sweetSpotCharacter then
-				self:ExtractFilesWithBun(fileList, useRegex)
-				fileList = ''
-			end
+			fileTable[#fileTable + 1] = fname
 		end
 	end
-
-	if fileList:len() > 0 then
-		self:ExtractFilesWithBun(fileList, useRegex)
-		fileList = ''
-	end
-end
-
-function GGPKClass:AddDatFiles()
-	local datFiles = scanDir(self.oozPath .. "Data\\", '%w+%.dat$')
-	for _, f in ipairs(datFiles) do
-		local record = { }
-		record.name = f
-		local rawFile = io.open(self.oozPath .. "Data\\" .. f, 'rb')
-		record.data = rawFile:read("*all")
-		rawFile:close()
-		--ConPrintf("FILENAME: %s", fname)
-		t_insert(self.dat, record)
-	end
+	self:ExtractFilesWithBunFromTable(fileTable, useRegex)
 end
 
 function GGPKClass:AddDat64Files()
