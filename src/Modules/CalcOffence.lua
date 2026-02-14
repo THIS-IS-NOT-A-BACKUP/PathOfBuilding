@@ -1029,7 +1029,7 @@ function calcs.offence(env, actor, activeSkill)
 			output.ProjectileCount = 1
 		else
 			local projMin = skillModList:Sum("BASE", skillCfg, "ProjectileCountMinimum")
-			local projMax = skillModList:Sum("BASE", skillCfg, "ProjectileCountMaximum")
+			local projMax = skillModList:Override(skillCfg, "ProjectileCountMaximum") or m_huge
 			local projBase = skillModList:Sum("BASE", skillCfg, "ProjectileCount")
 			local projMore = skillModList:More(skillCfg, "ProjectileCount")
 			local proj = m_floor(projBase * projMore)
