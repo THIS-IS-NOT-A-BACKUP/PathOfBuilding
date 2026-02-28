@@ -643,7 +643,10 @@ function calcs.defence(env, actor)
 
 	calcs.resistances(actor)
 	if env.minion and modDB:Sum("BASE", nil, "ResistanceAddedToMinions") > 0 then
-		env.minion.modDB:NewMod(elem.."Resist", "BASE", m_floor(final * modDB:Sum("BASE", nil, "ResistanceAddedToMinions") / 100), "Player")
+		for _, elem in ipairs(resistTypeList) do
+			local final = output[elem.."Resist"]
+			env.minion.modDB:NewMod(elem.."Resist", "BASE", m_floor(final * modDB:Sum("BASE", nil, "ResistanceAddedToMinions") / 100), "Player")
+		end
 	end
 	-- Formless Inferno
 	if actor == env.minion then
