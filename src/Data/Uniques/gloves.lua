@@ -795,20 +795,21 @@ Shaper Item
 Source: Drops from unique{The Shaper}
 Variant: Pre 2.6.0
 Variant: Pre 3.10.0
+Variant: Pre 3.28.0
 Variant: Current
 Requires Level 66, 51 Str, 51 Int
 (80-120)% increased Armour and Energy Shield
-{variant:1}+2 Accuracy Rating per 2 Intelligence
+{variant:1,4}+2 Accuracy Rating per 2 Intelligence
 {variant:2,3}+4 Accuracy Rating per 2 Intelligence
 +1 Life per 4 Dexterity
-{variant:1,3}+1 Mana per 4 Strength
+{variant:1,3,4}+1 Mana per 4 Strength
 {variant:2}+2 Mana per 4 Strength
-{variant:1,3}1% increased Energy Shield per 10 Strength
+{variant:1,3,4}1% increased Energy Shield per 10 Strength
 {variant:2}2% increased Energy Shield per 10 Strength
 {variant:1}1% increased Evasion Rating per 10 Intelligence
-{variant:2,3}2% increased Evasion Rating per 10 Intelligence
+{variant:2,3,4}2% increased Evasion Rating per 10 Intelligence
 {variant:1}1% increased Melee Physical Damage per 10 Dexterity
-{variant:2,3}2% increased Melee Physical Damage per 10 Dexterity
+{variant:2,3,4}2% increased Melee Physical Damage per 10 Dexterity
 ]],[[
 Southbound
 Soldier Gloves
@@ -870,13 +871,15 @@ Chaos Skills have 20% chance to Ignite
 ]],[[
 Hand of Heresy
 Martyr Gloves
-Source: Drops from unique{Mercenary} after winning a duel
 League: Mercenaries of Trarthus
+Variant: Pre 3.28.0
+Variant: Current
 Requires Level 77, 70 Str, 70 Int
 (40-80)% increased Armour and Energy Shield
 (15-25)% increased Life Regeneration rate
 15% increased Area of Effect of Aura Skills
 Excommunicate Enemies on Melee Hit for 3 seconds
+{variant:2}+(0.8-1.6)% to Critical Strike Chance against Excommunicated Enemies
 ]],
 -- Gloves: Evasion/Energy Shield
 [[

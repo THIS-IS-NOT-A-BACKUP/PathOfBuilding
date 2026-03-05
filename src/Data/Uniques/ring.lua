@@ -1142,6 +1142,7 @@ Coral Ring
 Variant: Pre 2.0.0
 Variant: Pre 2.6.0
 Variant: Pre 3.9.0
+Variant: Pre 3.28.0
 Variant: Current
 Requires Level 45
 Implicits: 1
@@ -1149,13 +1150,15 @@ Implicits: 1
 {tags:jewellery_elemental,attack}(20-30)% increased Elemental Damage with Attack Skills
 {tags:jewellery_elemental,attack}Adds (8-15) to (20-28) Fire Damage to Attacks
 {variant:1}(20-40)% reduced Rarity of Items found
-{variant:2,3,4}(10-20)% reduced Rarity of Items found
+{variant:2,3,4,5}(10-20)% reduced Rarity of Items found
 {variant:1,2}Left ring slot: 30% reduced Reflected Elemental Damage taken
 {variant:3}Left ring slot: 40% reduced Reflected Elemental Damage taken
 {variant:4}Left ring slot: 80% reduced Reflected Elemental Damage taken
+{variant:5}Left ring slot: 100% of Elemental Hit Damage from you and your Minions cannot be Reflected
 {variant:1,2}{tags:physical}Right ring slot: 30% reduced Reflected Physical Damage taken
 {variant:3}{tags:physical}Right ring slot: 40% reduced Reflected Physical Damage taken
 {variant:4}{tags:physical}Right ring slot: 80% reduced Reflected Physical Damage taken
+{variant:5}Right ring slot: 100% of Physical Hit Damage from you and your Minions cannot be Reflected
 ]],[[
 Snakepit
 Sapphire Ring
@@ -1675,7 +1678,7 @@ Increases and Reductions to Chaos Damage also apply to Effect of Auras from Chao
 [[
 The Unseen Hue
 Opal Ring
-Source: Drops from unique{Uber Incarnation of Dread} in normal{Moment of Reverence}
+Source: Drops from unique{Incarnation of Dread} in normal{Moment of Reverence}
 Requires Level 80
 Variant: Scorch
 Variant: Brittle
@@ -1753,14 +1756,18 @@ Increases and Reductions to Fire Damage also apply to Effect of Auras from Fire 
 [[
 Woespike
 Steel Ring
-Source: Drops from unique{Incarnation of Fear} in normal{Moment of Trauma}
+Source: Drops from unique{Uber Incarnation of Fear} in normal{Moment of Trauma}
+Variant: Pre 3.28.0
+Variant: Current
 Requires Level 80
 Implicits: 1
 {tags:attack,physical_damage}Adds (3-4) to (10-14) Physical Damage to Attacks
 {tags:jewellery_attribute}+(25-40) to Strength and Dexterity
 {tags:attack,physical_damage}Adds (8-12) to (18-24) Physical Damage to Attacks
 {tags:attack}(10-20)% chance to Impale Enemies on Hit with Attacks
-(40-25)% reduced Impale Duration
-{tags:attack}(40-60)% chance on Melee Hit for the Strongest Impale on target to last for 1 additional Hit
+{variant:1}(40-25)% reduced Impale Duration
+{variant:2}(50-40)% less Impale Duration
+{variant:1}{tags:attack}(45-60)% chance on Melee Hit for the Strongest Impale on target to last for 1 additional Hit
+{variant:2}{tags:attack}(20-30)% chance on Melee Hit for the Strongest Impale on target to last for 1 additional Hit
 ]],
 }
