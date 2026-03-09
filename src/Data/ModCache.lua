@@ -10390,6 +10390,7 @@ c["Passives granting Fire Resistance or all Elemental Resistances in Radius also
 c["Passives granting Lightning Resistance or all Elemental Resistances in Radius"]={nil,"Passives granting Lightning Resistance or all Elemental Resistances in Radius "}
 c["Passives granting Lightning Resistance or all Elemental Resistances in Radius also grant an equal chance to gain a Power Charge on Kill"]={nil,"Passives granting Lightning Resistance or all Elemental Resistances in Radius also grant an equal chance to gain a Power Charge on Kill "}
 c["Passives in radius are Conquered by the Eternal Empire"]={{},nil}
+c["Passives in radius are Conquered by the Kalguur"]={{},nil}
 c["Passives in radius are Conquered by the Karui"]={{},nil}
 c["Passives in radius are Conquered by the Maraketh"]={{},nil}
 c["Passives in radius are Conquered by the Templars"]={{},nil}
@@ -10862,6 +10863,10 @@ c["Regenerate 8% of Energy Shield over 2 seconds when you Consume a corpse"]={{[
 c["Regenerate 80 Energy Shield per Second per Poison on you, up to 400 per second"]={{[1]={[1]={limit=400,limitTotal=true,type="Multiplier",var="PoisonStack"},flags=0,keywordFlags=0,name="EnergyShieldRegen",type="BASE",value=80}},nil}
 c["Regenerate 9 Mana per second"]={{[1]={flags=0,keywordFlags=0,name="ManaRegen",type="BASE",value=9}},nil}
 c["Regenerate 90 Energy Shield per second"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRegen",type="BASE",value=90}},nil}
+c["Remembrancing 4050 songworthy deeds by the line of Medved"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="conqueredBy",value={conqueror={id=3,type="kalguur"},id=4050}}}},nil}
+c["Remembrancing 8000 songworthy deeds by the line of Medved"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="conqueredBy",value={conqueror={id=3,type="kalguur"},id=8000}}}},nil}
+c["Remembrancing 8000 songworthy deeds by the line of Uhtred"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="conqueredBy",value={conqueror={id=2,type="kalguur"},id=8000}}}},nil}
+c["Remembrancing 8000 songworthy deeds by the line of Vorana"]={{[1]={flags=0,keywordFlags=0,name="JewelData",type="LIST",value={key="conqueredBy",value={conqueror={id=1,type="kalguur"},id=8000}}}},nil}
 c["Remove Bleeding when you use a Guard Skill"]={nil,"Remove Bleeding when you use a Guard Skill "}
 c["Remove Bleeding when you use a Guard Skill Remove Corrupted Blood when you use a Guard Skill"]={nil,"Remove Bleeding when you use a Guard Skill Remove Corrupted Blood when you use a Guard Skill "}
 c["Remove Bleeding when you use a Guard Skill Remove Corrupted Blood when you use a Guard Skill Guard Skills have 25% increased Duration"]={nil,"Remove Bleeding when you use a Guard Skill Remove Corrupted Blood when you use a Guard Skill Guard Skills have 25% increased Duration "}
