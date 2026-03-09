@@ -4412,12 +4412,35 @@ function calcs.offence(env, actor, activeSkill)
 			globalOutput.PoisonDuration = durationBase * durationMod / rateMod * debuffDurationMult
 			-- The chance any given hit applies poison
 			local poisonChance = output.PoisonChanceOnHit / 100 * (1 - output.CritChance / 100) + output.PoisonChanceOnCrit / 100 * output.CritChance / 100
-			local doublePoisonChance = 1 + (skillModList:Flag(nil, "CannotMultiPoison") and 0 or m_min(skillModList:Sum("BASE", cfg, "DoublePoisonChance")/ 100, 1))
-			-- The average number of poisons that will be active on the enemy at once
-			local PoisonStacks = output.HitChance / 100 * poisonChance * doublePoisonChance * skillData.dpsMultiplier * (skillData.stackMultiplier or 1) * quantityMultiplier
+			
+			-- Handling of "inflict x additional poisons"
+			local additionalPoisonStacks = 1
+			if not skillModList:Flag(nil, "CannotMultiplePoison") then
+				additionalPoisonStacks = 1 + m_min(skillModList:Sum("BASE", cfg, "AdditionalPoisonChance")/ 100, 1) + (skillModList:Sum("BASE", cfg, "AdditionalPoisonStacks"))
+			end
+
+			-- Calculate average number of poisons that will be active on the enemy at once
+			local poisonStackLimit = skillModList:Min(cfg, "PoisonStackLimit")
+			local PoisonStacks = output.HitChance / 100 * poisonChance * additionalPoisonStacks * skillData.dpsMultiplier * (skillData.stackMultiplier or 1) * quantityMultiplier
+			local uncappedPoisonStacks
 			if (globalOutput.HitSpeed or globalOutput.Speed) > 0 then
 				--assume skills with no cast, attack, or cooldown time are single cast
 				PoisonStacks = PoisonStacks * globalOutput.PoisonDuration * (globalOutput.HitSpeed or globalOutput.Speed) 
+				
+				-- If stack limit exists, avg. poison stack is more complicated
+				if poisonStackLimit and poisonStackLimit > 0 and PoisonStacks > poisonStackLimit then
+					-- Calc number of avg. poisons applied per hit (without hit rate multipliers)
+					local singleHitPoisonChance = output.HitChance / 100 * poisonChance
+					local singleHitPoisonStacks = singleHitPoisonChance * additionalPoisonStacks
+
+					-- Calc how many hits will poison before limit is reached and theoretical max poison stacks, which is different from `poisonStackLimit` due to "additional" poison mechanics 
+					local numPoisoningHits = m_ceil(poisonStackLimit / singleHitPoisonStacks)
+					local maxPoisonStacks = numPoisoningHits * singleHitPoisonStacks
+
+					-- Only use `maxPoisonStacks` if original value exceeds it
+					uncappedPoisonStacks = m_max(PoisonStacks, maxPoisonStacks)
+					PoisonStacks = m_min(PoisonStacks, maxPoisonStacks)
+				end
 			end
 			if PoisonStacks < 1 and (env.configInput.multiplierPoisonOnEnemy or 0) <= 1 then
 				skillModList:NewMod("Condition:SinglePoison", "FLAG", true, "poison")
@@ -4428,7 +4451,7 @@ function calcs.offence(env, actor, activeSkill)
 					base = { "%.2fs ^8(poison duration)", globalOutput.PoisonDuration },
 					{ "%.2f ^8(poison chance)", poisonChance },
 					{ "%.2f ^8(hit chance)", output.HitChance / 100 },
-					{ "%.2f ^8(double poison chance)", doublePoisonChance },
+					{ "%.2f ^8(avg. # of poisons inflicted)", additionalPoisonStacks },
 					{ "%.2f ^8(hits per second)", globalOutput.HitSpeed or globalOutput.Speed },
 					{ "%g ^8(dps multiplier for this skill)", skillData.dpsMultiplier or 1 },
 					{ "%g ^8(stack multiplier for this skill)", skillData.stackMultiplier or 1 },
@@ -4436,7 +4459,14 @@ function calcs.offence(env, actor, activeSkill)
 					total = s_format("= %.2f", PoisonStacks),
 				})
 				if skillModList:Flag(nil, "Condition:SinglePoison") then
-					t_insert(globalBreakdown.PoisonStacks, "Capped to 1")
+					t_insert(globalBreakdown.PoisonStacks, "Assuming 'non-Poisoned' Enemy")
+				end
+				if poisonStackLimit and PoisonStacks >= poisonStackLimit then
+					t_insert(globalBreakdown.PoisonStacks, "^8(affected by poison stack limit of: " .. poisonStackLimit .. ")")
+					if uncappedPoisonStacks then
+						t_insert(globalBreakdown.PoisonStacks, "^8(uncapped poison stacks: " .. s_format("%.2f", uncappedPoisonStacks) .. ")")
+					end
+
 				end
 			end
 			for sub_pass = 1, 2 do
