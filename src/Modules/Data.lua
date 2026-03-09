@@ -646,6 +646,8 @@ data.itemTagSpecial = {
 			"Cannot Evade",
 		},
 	},
+	["defence"] = {
+	},
 }
 data.itemTagSpecialExclusionPattern = {
 	["life"] = {
@@ -740,6 +742,8 @@ data.itemTagSpecialExclusionPattern = {
 	["evasion"] = {
 		["ring"] = {
 		},
+	},
+	["defence"] = {
 	},
 }
 
