@@ -1412,6 +1412,7 @@ c["+40% to Critical Strike Multiplier if you've cast Enfeeble in the past 10 sec
 c["+40% to Critical Strike Multiplier if you've gained a Power Charge Recently"]={{[1]={[1]={type="Condition",var="GainedPowerChargeRecently"},flags=0,keywordFlags=0,name="CritMultiplier",type="BASE",value=40}},nil}
 c["+40% to Critical Strike Multiplier with Axes"]={{[1]={flags=65540,keywordFlags=0,name="CritMultiplier",type="BASE",value=40}},nil}
 c["+40% to Critical Strike Multiplier with Claws"]={{[1]={flags=262148,keywordFlags=0,name="CritMultiplier",type="BASE",value=40}},nil}
+c["+40% to Damage over Time Multiplier"]={{[1]={flags=0,keywordFlags=0,name="DotMultiplier",type="BASE",value=40}},nil}
 c["+40% to Damage over Time Multiplier for Bleeding from Critical Strikes"]={{[1]={[1]={type="Condition",var="CriticalStrike"},flags=0,keywordFlags=4194304,name="DotMultiplier",type="BASE",value=40}},nil}
 c["+40% to Fire Resistance"]={{[1]={flags=0,keywordFlags=0,name="FireResist",type="BASE",value=40}},nil}
 c["+40% to Global Critical Strike Multiplier"]={{[1]={[1]={type="Global"},flags=0,keywordFlags=0,name="CritMultiplier",type="BASE",value=40}},nil}
@@ -1558,6 +1559,7 @@ c["+50% to Global Critical Strike Multiplier while you have a Frenzy Charge"]={{
 c["+50% to Lightning Resistance"]={{[1]={flags=0,keywordFlags=0,name="LightningResist",type="BASE",value=50}},nil}
 c["+50% to Quality of Socketed Gems"]={{[1]={[1]={slotName="{SlotName}",type="SocketedIn"},flags=0,keywordFlags=0,name="GemProperty",type="LIST",value={key="quality",keyword="all",value=50}}},nil}
 c["+50% to all Elemental Resistances"]={{[1]={flags=0,keywordFlags=0,name="ElementalResist",type="BASE",value=50}},nil}
+c["+50% to global critical strike chance"]={{[1]={[1]={type="Global"},flags=0,keywordFlags=0,name="CritChance",type="BASE",value=50}},nil}
 c["+500 to Accuracy Rating"]={{[1]={flags=0,keywordFlags=0,name="Accuracy",type="BASE",value=500}},nil}
 c["+500 to Accuracy Rating while at Maximum Frenzy Charges"]={{[1]={[1]={stat="FrenzyCharges",thresholdStat="FrenzyChargesMax",type="StatThreshold"},flags=0,keywordFlags=0,name="Accuracy",type="BASE",value=500}},nil}
 c["+500 to Accuracy against Bleeding Enemies"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="Bleeding"},flags=0,keywordFlags=0,name="AccuracyVsEnemy",type="BASE",value=500}},nil}
@@ -5899,6 +5901,7 @@ c["50% less Damage"]={{[1]={flags=0,keywordFlags=0,name="Damage",type="MORE",val
 c["50% less Damage Taken from Damage over Time while you have Unbroken Ward"]={{[1]={flags=0,keywordFlags=0,name="DamageTakenOverTime",type="MORE",value=-50}},"  while you have Unbroken Ward "}
 c["50% less Damage with Bleeding"]={{[1]={flags=0,keywordFlags=4194304,name="Damage",type="MORE",value=-50}},nil}
 c["50% less Duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="MORE",value=-50}},nil}
+c["50% less Duration of Ignites you inflict"]={{[1]={flags=0,keywordFlags=0,name="EnemyIgniteDuration",type="MORE",value=-50}},nil}
 c["50% less Energy Shield Recharge Rate"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRecharge",type="MORE",value=-50}},nil}
 c["50% less Ignite Duration"]={{[1]={flags=0,keywordFlags=0,name="EnemyIgniteDuration",type="MORE",value=-50}},nil}
 c["50% less Life Recovery from Flasks"]={{[1]={flags=0,keywordFlags=0,name="FlaskLifeRecovery",type="MORE",value=-50}},nil}
@@ -9458,6 +9461,8 @@ c["Ignites all nearby Enemies on Killing an Ignited Enemy"]={nil,"Ignites all ne
 c["Ignites from Stunning Melee Hits deal 20% more Damage"]={nil,"Ignites from Stunning Melee Hits deal 20% more Damage "}
 c["Ignites inflicted with this Weapon deal 63% more Damage"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},flags=0,keywordFlags=8388608,name="Damage",type="MORE",value=63}},nil}
 c["Ignites inflicted with this Weapon deal 75% more Damage"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},flags=0,keywordFlags=8388608,name="Damage",type="MORE",value=75}},nil}
+c["Ignites you cause are reflected back to you"]={nil,"Ignites you cause are reflected back to you "}
+c["Ignites you cause are reflected back to you 50% less Duration of Ignites you inflict"]={nil,"Ignites you cause are reflected back to you 50% less Duration of Ignites you inflict "}
 c["Ignites you inflict deal Damage 15% faster"]={{[1]={flags=0,keywordFlags=0,name="IgniteBurnFaster",type="INC",value=15}},nil}
 c["Ignites you inflict deal Damage 40% faster"]={{[1]={flags=0,keywordFlags=0,name="IgniteBurnFaster",type="INC",value=40}},nil}
 c["Ignites you inflict deal Damage 45% faster"]={{[1]={flags=0,keywordFlags=0,name="IgniteBurnFaster",type="INC",value=45}},nil}
@@ -9469,6 +9474,8 @@ c["Ignites you inflict during Effect spread to other Enemies within 1.5 metres L
 c["Ignites you inflict spread to other Enemies within a Radius of 1.5 metres"]={nil,"Ignites you inflict spread to other Enemies within a Radius of 1.5 metres "}
 c["Ignites you inflict with Attacks deal Damage 20% faster"]={{[1]={flags=1,keywordFlags=0,name="IgniteBurnFaster",type="INC",value=20}},nil}
 c["Ignites you inflict with Attacks deal Damage 35% faster"]={{[1]={flags=1,keywordFlags=0,name="IgniteBurnFaster",type="INC",value=35}},nil}
+c["Ignites you inflict with this weapon spread to other Enemies within 2.8 metres"]={nil,"Ignites you inflict with this weapon spread to other Enemies within 2.8 metres "}
+c["Ignites you inflict with this weapon spread to other Enemies within 2.8 metres Unaffected by Ignite"]={nil,"Ignites you inflict with this weapon spread to other Enemies within 2.8 metres Unaffected by Ignite "}
 c["Ignites your Skills cause spread to other Enemies within 1.2 metres"]={nil,"Ignites your Skills cause spread to other Enemies within 1.2 metres "}
 c["Ignites your Skills cause spread to other Enemies within 1.2 metres Ignites your Skills cause spread to other Enemies within 1.5 metres"]={nil,"Ignites your Skills cause spread to other Enemies within 1.2 metres Ignites your Skills cause spread to other Enemies within 1.5 metres "}
 c["Ignites your Skills cause spread to other Enemies within 1.5 metres"]={nil,"Ignites your Skills cause spread to other Enemies within 1.5 metres "}
