@@ -1581,19 +1581,44 @@ function ItemsTabClass:DeleteItem(item, deferUndoState)
 	end
 end
 
+local function copyAnointsAndEldritchImplicits(newItem, activeItemSet, items)
+	local newItemType = newItem.base.type
+	if activeItemSet[newItemType] then
+		local currentItem = activeItemSet[newItemType].selItemId and items[activeItemSet[newItemType].selItemId]
+		-- if you don't have an equipped item that matches the type of the newItem, no need to do anything
+		if currentItem then
+			-- if the new item is anointable and does not have an anoint and your current respective item does, apply that anoint to the new item
+			if isAnointable(newItem) and #newItem.enchantModLines == 0 and activeItemSet[newItemType].selItemId > 0 then
+				local currentAnoint = currentItem.enchantModLines
+				if currentAnoint and #currentAnoint == 1 then -- skip if amulet has more than one anoint e.g. Stranglegasp
+					newItem.enchantModLines = currentAnoint
+				end
+			end
+			-- if the new item is a non-corrupted Normal, Magic, or Rare Helmet, Body Armour, Gloves, or Boots and does not have any influence
+			-- and your current respective item is Eater and/or Exarch, apply those implicits and influence to the new item
+			local eldritchBaseTypes = { "Helmet", "Body Armour", "Gloves", "Boots" }
+			local eldritchRarities = { "NORMAL", "MAGIC", "RARE" }
+			for _, influence in ipairs(itemLib.influenceInfo.default) do
+				if newItem[influence.key] then
+					return
+				end
+			end
+			if main.migrateEldritchImplicits and isValueInTable(eldritchBaseTypes, newItem.base.type) and isValueInTable(eldritchRarities, newItem.rarity)
+				and #newItem.implicitModLines == 0 and not newItem.corrupted and (currentItem.cleansing or currentItem.tangle) and currentItem.implicitModLines then
+					newItem.implicitModLines = currentItem.implicitModLines
+					newItem.tangle = currentItem.tangle
+					newItem.cleansing = currentItem.cleansing
+			end
+			newItem:BuildAndParseRaw()
+		end
+	end
+end
+
 -- Attempt to create a new item from the given item raw text and sets it as the new display item
 function ItemsTabClass:CreateDisplayItemFromRaw(itemRaw, normalise)
 	local newItem = new("Item", itemRaw)
 	if newItem.base then
-		local itemType = newItem.base.type
-		-- if the new item is anointable and does not have an anoint and your current respective item does, apply that anoint to the new item
-		if isAnointable(newItem) and #newItem.enchantModLines == 0 and self.activeItemSet[itemType].selItemId > 0 then
-			local currentAnoint = self.items[self.activeItemSet[itemType].selItemId].enchantModLines
-			if currentAnoint and #currentAnoint == 1 then -- skip if amulet has more than one anoint e.g. Stranglegasp
-				newItem.enchantModLines = currentAnoint
-				newItem:BuildAndParseRaw()
-			end
-		end
+		copyAnointsAndEldritchImplicits(newItem, self.activeItemSet, self.items)
 		if normalise then
 			newItem:NormaliseQuality()
 			newItem:BuildModList()
