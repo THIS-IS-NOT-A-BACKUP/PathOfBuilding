@@ -1,15 +1,6 @@
 VERSION[2.63.0][2026/03/15]
 
 --- New to Path of Building ---
-* Add Holy Strike FullDPS override to not overstate melee damage (LocalIdentity)
-* Added unique The Broken Elegy (MrHB212)
-* Add radius values for Queen's Demand skills (Wires77)
-* Add new 3.28 Uniques (LocalIdentity)
-* Add parsing for Hallowing Flame mods (Paliak)
-* Add support for defaulting gems to level 1 (Peechey)
-* Add support for searching all sockets for Timeless Jewel finder <!-- Release notes generated using configuration in .github/release.yml at dev -->
-
---- New to Path of Building ---
 * Add new 3.28 Uniques and add support for their mods (LocalIdentity, MrHB212)
 * Add support for defaulting gems to level 1 to help search for best Imbued Support (Peechey)
 * Add support for searching all sockets with Timeless Jewel finder (deathbeam)
