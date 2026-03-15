@@ -478,7 +478,7 @@ local skills, mod, flag, skill = ...
 #mods
 
 #skill DivineBlast
-#flags attack melee area shieldAttack
+#flags attack area shieldAttack
 	parts = {
 		{
 			name = "Beam Implosion",
@@ -1036,11 +1036,9 @@ local skills, mod, flag, skill = ...
 		},
 		{
 			name = "First Hammer",
-			melee = false,
 		},
 		{
 			name = "Other Hammers",
-			melee = false,
 		},
 	},
 	statMap = {
@@ -1054,12 +1052,18 @@ local skills, mod, flag, skill = ...
 #mods
 
 #skill HolyStrike
-#flags attack minion duration
+#flags attack melee minion duration
 	minionList = {
 		"HolyStrikeMinion",
 	},
 	minionUses = {
 		["Weapon 1"] = true,
+	},
+	statMap = {
+		["skill_physical_damage_%_to_convert_to_lightning"] = {
+			mod("SkillPhysicalDamageConvertToLightning", "BASE", nil),
+			mod("MinionModifier", "LIST", { mod = mod("SkillPhysicalDamageConvertToLightning", "BASE", nil, 0, 0) })
+		},
 	},
 #mods
 
