@@ -878,6 +878,19 @@ function calcs.initEnv(build, mode, override, specEnv)
 			end
 		end
 
+		for _, slot in ipairs(build.itemsTab.orderedSlots) do
+			local item = items[slot.slotName]
+			local missingAnoints = build.itemsTab:getMissingAnointCount(item)
+			if missingAnoints > 0 then
+				local slotLabel = slot.label
+				if missingAnoints > 1 then
+					slotLabel = slotLabel .. " (" .. missingAnoints .. " missing)"
+				end
+				env.itemWarnings.missingAnointWarning = env.itemWarnings.missingAnointWarning or { }
+				t_insert(env.itemWarnings.missingAnointWarning, slotLabel)
+			end
+		end
+
 		-- Track which flask slot (1-5) each flask is in, for adjacency checks
 		env.flaskSlotMap = { }
 		env.flaskSlotOccupied = { }
