@@ -486,6 +486,14 @@ Highest Weight - Displays the order retrieved from trade]]
 		return hideRowFunc(self, row_count)
 	end
 	row_count = row_count + 1
+	-- Watcher's Eye
+	self.slotTables[row_count] = { slotName = "Watcher's Eye", unique = true }
+	self:PriceItemRowDisplay(row_count, top_pane_alignment_ref, row_vertical_padding, row_height)
+	self.controls["name"..row_count].y = self.controls["name"..row_count].y + (row_height + row_vertical_padding)
+	self.controls["name"..row_count].shown = function()
+		return hideRowFunc(self, row_count) and self:findValidSlotForWatchersEye()
+	end
+	row_count = row_count + 1
 
 	local effective_row_count = row_count - ((scrollBarShown and #slotTables >= 19) and #slotTables-19 or 0) + 2 + 2 -- Two top menu rows, two bottom rows, slots after #19 overlap the other controls at the bottom of the pane
 	self.effective_rows_height = row_height * (effective_row_count - #slotTables + (18 - (#slotTables > 37 and 3 or 0))) -- scrollBar height, "18 - slotTables > 37" logic is fine tuning whitespace after last row
@@ -870,12 +878,38 @@ function TradeQueryClass:addChaosEquivalentPriceToItems(items)
 	return outputItems
 end
 
+-- return valid slot for Watcher's Eye
+-- Tries to first return an existing watcher's eye slot if possible
+function TradeQueryClass:findValidSlotForWatchersEye()
+	for _, socket in pairs(self.itemsTab.sockets) do
+		local socketItem = self.itemsTab.items[socket.selItemId]
+		if not socket.inactive and socketItem and socketItem.name and socketItem.name:find("Watcher's Eye") then
+			return socket
+		end
+	end
+	local tmpWE=nil
+	for _,v in ipairs(data.uniques.generated) do
+		if v:find("Watcher's Eye") then
+			tmpWE= new("Item",v)
+			break
+		end
+	end
+	for _,v in pairs(self.itemsTab.sockets) do
+		if not v.inactive and self.itemsTab:IsItemValidForSlot(tmpWE,v.slotName,self.itemsTab.activeItemSet) then
+			return self.itemsTab.sockets[v.nodeId]
+		end
+	end
+end
+
 -- Method to generate pane elements for each item slot
 function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, row_vertical_padding, row_height)
 	local controls = self.controls
 	local slotTbl = self.slotTables[row_idx]
 	local activeSlotRef = slotTbl.nodeId and self.itemsTab.activeItemSet[slotTbl.nodeId] or self.itemsTab.activeItemSet[slotTbl.slotName]
-	local activeSlot = slotTbl.nodeId and self.itemsTab.sockets[slotTbl.nodeId] or slotTbl.slotName and (self.itemsTab.slots[slotTbl.slotName] or slotTbl.fullName and self.itemsTab.slots[slotTbl.fullName]) -- fullName for Abyssal Sockets
+	local activeSlot = slotTbl.nodeId and self.itemsTab.sockets[slotTbl.nodeId] or
+						slotTbl.slotName and (self.itemsTab.slots[slotTbl.slotName] or
+						slotTbl.slotName == "Watcher's Eye" and self:findValidSlotForWatchersEye() or
+						slotTbl.fullName and self.itemsTab.slots[slotTbl.fullName]) -- fullName for Abyssal Sockets
 	local nameColor = slotTbl.unique and colorCodes.UNIQUE or "^7"
 	controls["name"..row_idx] = new("LabelControl", top_pane_alignment_ref, {0, row_idx*(row_height + row_vertical_padding), 100, row_height - 4}, nameColor..slotTbl.slotName)
 	controls["bestButton"..row_idx] = new("ButtonControl", { "LEFT", controls["name"..row_idx], "LEFT"}, {100 + 8, 0, 80, row_height}, "Find best", function()
@@ -1013,7 +1047,16 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 		local result = self.resultTbl[row_idx][pb_index]
 		local item = new("Item", result.item_string)
 		tooltip:Clear()
-		self.itemsTab:AddItemTooltip(tooltip, item, slotTbl)
+		if slotTbl.slotName == "Watcher's Eye" then
+			local firstValidSlot = self:findValidSlotForWatchersEye()
+			local currentItem = firstValidSlot.selItemId ~= 0 and self.itemsTab.items[firstValidSlot.selItemId] 
+			local eyeEquipped = currentItem and currentItem.name:find("Watcher's Eye")
+			-- for watcher's eye we can compare to an already existing one, or
+			-- default to comparing with all active sockets
+			self.itemsTab:AddItemTooltip(tooltip, item, eyeEquipped and firstValidSlot or nil)
+		else
+			self.itemsTab:AddItemTooltip(tooltip, item, slotTbl)
+		end
 		addMegalomaniacCompareToTooltipIfApplicable(tooltip, pb_index)
 		tooltip:AddSeparator(10)
 		tooltip:AddLine(16, string.format("^7Price: %s %s", result.amount, result.currency))
@@ -1041,7 +1084,18 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 			-- item.baseName is nil and throws error in the following AddItemTooltip func
 			-- if the item is unidentified
 			local item = new("Item", item_string)
-			self.itemsTab:AddItemTooltip(tooltip, item, slotTbl, true)
+			-- for watcher's eye we can compare to an already existing one, or
+			-- default to comparing with all active sockets
+			if slotTbl.slotName == "Watcher's Eye" then
+				local firstValidSlot = self:findValidSlotForWatchersEye()
+				local currentItem = firstValidSlot.selItemId ~= 0 and self.itemsTab.items[firstValidSlot.selItemId]
+				local eyeEquipped = currentItem and currentItem.name:find("Watcher's Eye")
+				-- for watcher's eye we can compare to an already existing one, or
+				-- default to comparing with all active sockets
+				self.itemsTab:AddItemTooltip(tooltip, item, eyeEquipped and firstValidSlot or nil, true)
+			else
+				self.itemsTab:AddItemTooltip(tooltip, item, slotTbl, true)
+			end
 			addMegalomaniacCompareToTooltipIfApplicable(tooltip, selected_result_index)
 		end
 	end
