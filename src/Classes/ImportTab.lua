@@ -758,6 +758,7 @@ function ImportTabClass:ImportItemsAndSkills(json)
 			end
 		end
 		wipeTable(self.build.skillsTab.socketGroupList)
+		self.build.skillsTab:RebuildImbuedSupportBySlot()
 	end
 	self.charImportStatus = colorCodes.POSITIVE.."Items and skills successfully imported."
 	--ConPrintTable(charItemData)
@@ -1147,6 +1148,10 @@ function ImportTabClass:ImportSocketedItems(item, socketedItems, slotName)
 					t_insert(socketGroup.gemList, 1, gemInstance)
 				else
 					t_insert(socketGroup.gemList, gemInstance)
+				end
+				if socketedItem.builtInSupport then
+					socketGroup.imbuedSupport = socketedItem.builtInSupport:gsub("Supported by Level 1 ", "")
+					self.build.skillsTab.controls.imbuedSupport.gemChangeFunc(data.gems[data.gemForBaseName[socketGroup.imbuedSupport:lower().." support"]], nil, nil, slotName)
 				end
 			end
 		end
