@@ -41,7 +41,7 @@ describe("TradeQuery", function()
 			-- resultTbl[1] only afterwards, to simulate a stale tooltip
 			-- callback firing after the results were invalidated.
 			local tq = newTradeQuery({
-				resultTbl       = { [1] = { [1] = { item_string = "Rarity: RARE\nBehemoth Hold\nGold Ring" } } },
+				resultTbl       = { [1] = { [1] = { item_string = "Rarity: RARE\nBehemoth Hold\nGold Ring", amount = 1, currency = "chaos" } } },
 				sortedResultTbl = { [1] = { { index = 1 } } },
 			})
 			local dropdown = buildRow1Dropdown(tq)
