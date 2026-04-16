@@ -812,6 +812,10 @@ function calcs.initEnv(build, mode, override, specEnv)
 					end
 				end
 			end
+			if item and item.type == "Flask" and item.base.subType == "Life" and item.flaskData then
+				-- Keep highest life flask recovery even if this slot is later disabled (e.g. Poisonous Concoction).
+				env.itemModDB.multipliers["LifeFlaskRecovery"] = m_max(env.itemModDB.multipliers["LifeFlaskRecovery"] or 0, item.flaskData.lifeTotal or 0)
+			end
 			items[slotName] = item
 			::continue::
 		end
@@ -912,11 +916,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 					env.flaskSlotOccupied[flaskNum] = true
 				end
 				if item.base.subType == "Life" then
-					local highestLifeRecovery = env.itemModDB.multipliers["LifeFlaskRecovery"] or 0
 					local highestCharges = env.itemModDB.multipliers["LifeFlaskCharges"] or 0
-					if item.flaskData.lifeTotal > highestLifeRecovery then
-						env.itemModDB.multipliers["LifeFlaskRecovery"] = item.flaskData.lifeTotal
-					end
 					if item.flaskData.chargesMax > highestCharges then
 						env.itemModDB.multipliers["LifeFlaskCharges"] = item.flaskData.chargesMax
 					end
