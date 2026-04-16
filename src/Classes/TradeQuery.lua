@@ -184,11 +184,16 @@ function TradeQueryClass:PriceBuilderProcessPoENinjaResponse(resp)
 	if resp then
 		-- Populate the chaos-converted values for each tradeId
 		for currencyName, chaosEquivalent in pairs(resp) do
+			local currencyName = currencyName:lower()
 			if self.currencyConversionTradeMap[currencyName] then
 				self.pbCurrencyConversion[self.pbLeague][self.currencyConversionTradeMap[currencyName]] = chaosEquivalent
 			else
 				ConPrintf("Unhandled Currency Name: '"..currencyName.."'")
 			end
+		end
+		-- if nothing was actually found, we should add a notice
+		if next(self.pbCurrencyConversion[self.pbLeague]) == nil then
+			self:SetNotice(self.controls.pbNotice, "No currencies received from PoE Ninja")
 		end
 	else
 		self:SetNotice(self.controls.pbNotice, "PoE Ninja JSON Processing Error")
@@ -277,7 +282,23 @@ You can click this button to enter your POESESSID.
 - You can only generate weighted searches for public leagues. (Generated searches can be modified
 on trade site to work on other leagues and realms)]]
 
--- Fetches Box
+	-- Buyout selection
+	self.tradeTypes = {
+		"Instant buyout",
+		"Instant buyout and in person",
+		"In person (online in league)",
+		"In person (online)",
+		"Any (includes offline)"
+	}
+	
+	self.controls.tradeTypeSelection = new("DropDownControl", { "TOPLEFT", self.controls.poesessidButton, "BOTTOMLEFT" },
+		{ 0, row_vertical_padding, 188, row_height }, self.tradeTypes, function(index, value)
+			self.tradeTypeIndex = index
+		end)
+	-- remember previous choice
+	self.controls.tradeTypeSelection:SetSel(self.tradeTypeIndex or 1)
+
+	-- Fetches Box
 	self.maxFetchPerSearchDefault = 2
 	self.controls.fetchCountEdit = new("EditControl", {"TOPRIGHT", nil, "TOPRIGHT"}, {-12, 19, 154, row_height}, "", "Fetch Pages", "%D", 3, function(buf)
 		self.maxFetchPages = m_min(m_max(tonumber(buf) or self.maxFetchPerSearchDefault, 1), 10)
@@ -338,20 +359,12 @@ on trade site to work on other leagues and realms)]]
 [[Weighted Sum searches will always sort using descending weighted sum
 Additional post filtering options can be done these include:
 Highest Stat Value - Sort from highest to lowest Stat Value change of equipping item
-Highest Stat Value / Price - Sorts from highest to lowest Stat Value per currency
+Highest Stat Value / Price - Sorts from highest to lowest by estimated Stat Value per currency
 Lowest Price - Sorts from lowest to highest price of retrieved items
 Highest Weight - Displays the order retrieved from trade]]
-	self.controls.itemSortSelection:SetSel(self.pbItemSortSelectionIndex)
-	self.controls.itemSortSelectionLabel = new("LabelControl", {"TOPRIGHT", self.controls.itemSortSelection, "TOPLEFT"}, {-4, 0, 60, 16}, "^7Sort By:")
-
-	-- Use Enchant in DPS sorting
-	self.controls.enchantInSort = new("CheckBoxControl", {"TOPRIGHT",self.controls.fetchCountEdit,"TOPLEFT"}, {-8, 0, row_height}, "Include Enchants:", function(state)
-		self.enchantInSort = state
-		for row_idx, _ in pairs(self.resultTbl) do
-			self:UpdateControlsWithItems(row_idx)
-		end
-	end)
-	self.controls.enchantInSort.tooltipText = "This includes enchants in sorting that occurs after trade results have been retrieved"
+	-- avoid calling selFunc to avoid updating controls before they are initialised
+	self.controls.itemSortSelection:SetSel(self.pbItemSortSelectionIndex, true)
+	self.controls.itemSortSelectionLabel = new("LabelControl", {"TOPRIGHT", self.controls.itemSortSelection, "TOPLEFT"}, {-4, 0, 56, 16}, "^7Sort By:")
 
 	-- Realm selection
 	self.controls.realmLabel = new("LabelControl", {"LEFT", self.controls.setSelect, "RIGHT"}, {18, 0, 20, row_height - 4}, "^7Realm:")
@@ -449,7 +462,7 @@ Highest Weight - Displays the order retrieved from trade]]
 		t_insert(slotTables, { slotName = self.itemsTab.sockets[nodeId].label, nodeId = nodeId })
 	end
 
-	self.controls.sectionAnchor = new("LabelControl", {"LEFT", self.controls.poesessidButton, "LEFT"}, {0, 0, 0, 0}, "")
+	self.controls.sectionAnchor = new("LabelControl", {"LEFT", self.controls.tradeTypeSelection, "LEFT"}, {0, row_vertical_padding + row_height, 0, 0}, "")
 	top_pane_alignment_ref = {"TOPLEFT", self.controls.sectionAnchor, "TOPLEFT"}
 	local scrollBarShown = #slotTables > 21 -- clipping starts beyond this
 	-- dynamically hide rows that are above or below the scrollBar
@@ -747,10 +760,7 @@ function TradeQueryClass:GetResultEvaluation(row_idx, result_index, calcFunc, ba
 		table.sort(result.evaluation, function(a, b) return a.weight > b.weight end)
 	else
 		local item = new("Item", result.item_string)
-		if not self.enchantInSort then -- Calc item DPS without anoint or enchant as these can generally be added after.
-			item.enchantModLines = { }
-			item:BuildAndParseRaw()
-		end
+
 		local output = self:ReduceOutput(calcFunc({ repSlotName = slotName, repItem = item }))
 		local weight = self.tradeQueryGenerator.WeightedRatioOutputs(baseOutput, output, self.statSortSelectionList)
 		result.evaluation = {{ output = output, weight = weight }}
@@ -759,6 +769,22 @@ function TradeQueryClass:GetResultEvaluation(row_idx, result_index, calcFunc, ba
 end
 
 -- Method to update controls after a search is completed
+function TradeQueryClass:UpdateDropdownList(row_idx)
+	local dropdownLabels = {}
+
+	if not self.resultTbl[row_idx] then return end
+
+	for result_index = 1, #self.resultTbl[row_idx] do
+
+		local pb_index = self.sortedResultTbl[row_idx][result_index].index
+		local result = self.resultTbl[row_idx][pb_index]
+		local price = string.format(" %s(%d %s)", colorCodes["CURRENCY"], result.amount, result.currency)
+		local item = new("Item", result.item_string)
+		table.insert(dropdownLabels, colorCodes[item.rarity] .. item.name .. price)
+	end
+	self.controls["resultDropdown".. row_idx].selIndex = 1
+	self.controls["resultDropdown".. row_idx]:SetList(dropdownLabels)
+end
 function TradeQueryClass:UpdateControlsWithItems(row_idx)
 	local sortMode = self.itemSortSelectionList[self.pbItemSortSelectionIndex]
 	local sortedItems, errMsg = self:SortFetchResults(row_idx, sortMode)
@@ -782,14 +808,7 @@ function TradeQueryClass:UpdateControlsWithItems(row_idx)
 		amount = self.resultTbl[row_idx][pb_index].amount,
 	}
 	self.controls.fullPrice.label = "Total Price: " .. self:GetTotalPriceString()
-	local dropdownLabels = {}
-	for result_index = 1, #self.resultTbl[row_idx] do
-		local pb_index = self.sortedResultTbl[row_idx][result_index].index
-		local item = new("Item", self.resultTbl[row_idx][pb_index].item_string)
-		table.insert(dropdownLabels, colorCodes[item.rarity]..item.name)
-	end
-	self.controls["resultDropdown".. row_idx].selIndex = 1
-	self.controls["resultDropdown".. row_idx]:SetList(dropdownLabels)
+	self:UpdateDropdownList(row_idx)
 end
 
 -- Method to set the current result return in the pane based of an index
@@ -838,6 +857,7 @@ function TradeQueryClass:SortFetchResults(row_idx, mode)
 		return newTbl
 	elseif mode == self.sortModes.StatValue  then
 		for result_index = 1, #self.resultTbl[row_idx] do
+			--ConPrintf("%.3f", getResultWeight(result_index))
 			t_insert(newTbl, { outputAttr = getResultWeight(result_index), index = result_index })
 		end
 		table.sort(newTbl, function(a,b) return a.outputAttr > b.outputAttr end)
@@ -847,7 +867,20 @@ function TradeQueryClass:SortFetchResults(row_idx, mode)
 			return nil, "MissingConversionRates"
 		end
 		for result_index = 1, #self.resultTbl[row_idx] do
-			t_insert(newTbl, { outputAttr = getResultWeight(result_index) / priceTable[result_index], index = result_index })
+			-- generally, because we are filtering our results to only the top
+			-- contenders, we will end up with a small spread of result weights.
+			-- this is however not true for prices as *decent* items might start
+			-- at a couple of div while perfect items are worth hundreds of
+			-- divs. I think the best option here is weight - k * log10(price)
+			-- to prioritise good items while only slightly punishing high
+			-- prices. another option would be weight / log10(price), but it
+			-- still seems to overrate very cheap items that are bad
+
+			-- scaling factor for price
+			local k = 0.03
+			t_insert(newTbl,
+				{ outputAttr = getResultWeight(result_index) - k * math.log(priceTable[result_index], 10), index =
+				result_index })
 		end
 		table.sort(newTbl, function(a,b) return a.outputAttr > b.outputAttr end)
 	elseif mode == self.sortModes.Price then
@@ -927,6 +960,7 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 				return
 			end
 			context.controls["priceButton"..context.row_idx].label = "Searching..."
+			self.lastQuery = query
 			self.tradeQueryRequests:SearchWithQueryWeightAdjusted(self.pbRealm, self.pbLeague, query,
 				function(items, errMsg)
 					if errMsg then
@@ -936,6 +970,25 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 					else
 						self:SetNotice(context.controls.pbNotice, "")
 					end
+
+					-- replace eldritch mods or enchants if the user requested
+					-- so in TradeQueryGenerator
+					if self.tradeQueryGenerator.lastCopyEldritch or
+						self.tradeQueryGenerator.lastCopyEnchantMode == "Copy Current" then
+						for i, _ in ipairs(items) do
+							local item = new("Item", items[i].item_string)
+							self.itemsTab:CopyAnointsAndEldritchImplicits(item, true, true, context.slotTbl.slotName)
+							items[i].item_string = item:BuildRaw()
+						end
+					elseif self.tradeQueryGenerator.lastCopyEnchantMode == "Remove" then
+						for i, _ in ipairs(items) do
+							local item = new("Item", items[i].item_string)
+							item.enchantModLines = {}
+							items[i].item_string = item:BuildRaw()
+						end
+					end
+
+
 					self.resultTbl[context.row_idx] = items
 					self:UpdateControlsWithItems(context.row_idx)
 					context.controls["priceButton"..context.row_idx].label =  "Price Item"
@@ -983,11 +1036,12 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 	controls["priceButton"..row_idx] = new("ButtonControl", { "TOPLEFT", controls["uri"..row_idx], "TOPRIGHT"}, {8, 0, 100, row_height}, "Price Item",
 		function()
 			controls["priceButton"..row_idx].label = "Searching..."
-			self.tradeQueryRequests:SearchWithURL(controls["uri"..row_idx].buf, function(items, errMsg)
+			self.tradeQueryRequests:SearchWithURL(controls["uri"..row_idx].buf, function(items, errMsg, query)
 				if errMsg then
 					self:SetNotice(controls.pbNotice, "Error: " .. errMsg)
 				else
 					self:SetNotice(controls.pbNotice, "")
+					self.lastQuery = query
 					self.resultTbl[row_idx] = items
 					self:UpdateControlsWithItems(row_idx)
 				end
@@ -1019,15 +1073,11 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 		self.controls.fullPrice.label = "Total Price: " .. self:GetTotalPriceString()
 	end)
 	controls["changeButton"..row_idx].shown = function() return self.resultTbl[row_idx] end
-	local dropdownLabels = {}
-	for _, sortedResult in ipairs(self.sortedResultTbl[row_idx] or {}) do
-		local item = new("Item", self.resultTbl[row_idx][sortedResult.index].item_string)
-		table.insert(dropdownLabels, colorCodes[item.rarity]..item.name)
-	end
-	controls["resultDropdown"..row_idx] = new("DropDownControl", { "TOPLEFT", controls["changeButton"..row_idx], "TOPRIGHT"}, {8, 0, 325, row_height}, dropdownLabels, function(index)
+	controls["resultDropdown"..row_idx] = new("DropDownControl", { "TOPLEFT", controls["changeButton"..row_idx], "TOPRIGHT"}, {8, 0, 325, row_height}, {}, function(index)
 		self.itemIndexTbl[row_idx] = self.sortedResultTbl[row_idx][index].index
 		self:SetFetchResultReturn(row_idx, self.itemIndexTbl[row_idx])
 	end)
+	self:UpdateDropdownList(row_idx)
 	local function addMegalomaniacCompareToTooltipIfApplicable(tooltip, result_index)
 		if slotTbl.slotName ~= "Megalomaniac" then
 			return
@@ -1103,23 +1153,58 @@ function TradeQueryClass:PriceItemRowDisplay(row_idx, top_pane_alignment_ref, ro
 		return self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]].item_string ~= nil
 	end
 	-- Whisper so we can copy to clipboard
-	controls["whisperButton"..row_idx] = new("ButtonControl", { "TOPLEFT", controls["importButton"..row_idx], "TOPRIGHT"}, {8, 0, 185, row_height}, function()
-		return self.totalPrice[row_idx] and "Whisper for " .. self.totalPrice[row_idx].amount .. " " .. self.totalPrice[row_idx].currency or "Whisper"
-	end, function()
-		Copy(self.resultTbl[row_idx][self.itemIndexTbl[row_idx]].whisper)
-	end)
-	controls["whisperButton"..row_idx].enabled = function()
-		return self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]].whisper ~= nil
-	end
-	controls["whisperButton"..row_idx].tooltipFunc = function(tooltip)
+	controls["whisperButton" .. row_idx] = new("ButtonControl",
+		{ "TOPLEFT", controls["importButton" .. row_idx], "TOPRIGHT" }, { 8, 0, 170, row_height }, function()
+			local itemResult = self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]]
+
+			if not itemResult then return "" end
+
+			local price = self.totalPrice[row_idx] and
+				self.totalPrice[row_idx].amount .. " " .. self.totalPrice[row_idx].currency
+
+			if itemResult.whisper then
+				return price and "Whisper for " .. price or "Whisper"
+			else
+				return price and "Search for " .. price or "Search"
+			end
+
+		end, function()
+			local itemResult = self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]]
+			if  itemResult.whisper then
+				Copy(itemResult.whisper)
+			else
+				local exactQuery = dkjson.decode(self.lastQuery)
+				-- use trade sum to get the specific item. both min and max
+				-- weight on site uses floats but only shows integer in the api
+				-- e.g. weight of 172.3 shows up as 172 in the api
+				exactQuery.query.stats[1].value = { min = floor(itemResult.weight, 1) - 1, max = round(itemResult.weight, 1) + 1 }
+				-- also apply trader name. this should make false positives
+				-- extremely unlikely. this doesn't seem to take up a filter slot
+				exactQuery.query.filters = exactQuery.query.filters or { }
+				exactQuery.query.filters.trade_filters = exactQuery.query.filters.trade_filters or { filters = { } }
+				exactQuery.query.filters.trade_filters.filters = exactQuery.query.filters.trade_filters.filters or { }
+				exactQuery.query.filters.trade_filters.filters.account = { input = itemResult.trader }
+
+				local exactQueryStr = dkjson.encode(exactQuery)
+				
+				self.tradeQueryRequests:SearchWithQuery(self.pbRealm, self.pbLeague, exactQueryStr, function(_, _)
+				end, {callbackQueryId = function(queryId)
+					local url = self.hostName.."trade/search/"..self.pbLeague.."/"..queryId
+					Copy(url)
+					OpenURL(url)
+				end})
+			end
+		end)
+
+	controls["whisperButton" .. row_idx].tooltipFunc = function(tooltip)
 		tooltip:Clear()
-		if self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]].item_string then
-			tooltip.center = true
-			tooltip:AddLine(16, "Copies the item purchase whisper to the clipboard")
-		end
+		tooltip.center = true
+		local itemResult = self.itemIndexTbl[row_idx] and self.resultTbl[row_idx][self.itemIndexTbl[row_idx]]
+		local text = itemResult.whisper and "Copies the item purchase whisper to the clipboard" or
+			"Opens the search page to show the item"
+		tooltip:AddLine(16, text)
 	end
 end
-
 -- Method to update the Total Price string sum of all items
 function TradeQueryClass:GetTotalPriceString()
 	local text = ""
