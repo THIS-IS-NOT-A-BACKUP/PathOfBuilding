@@ -524,6 +524,7 @@ function TreeTabClass:PostLoad()
 	for _, spec in ipairs(self.specList) do
 		spec:PostLoad()
 	end
+	self.build.itemsTab:PopulateSlots()
 end
 
 function TreeTabClass:Save(xml)
