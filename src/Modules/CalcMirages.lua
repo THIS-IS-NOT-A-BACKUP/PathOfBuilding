@@ -382,14 +382,15 @@ function calcs.mirages(env)
 		if env.player.mainSkill.skillTypes[SkillType.Channel] then
 			mirageSpawnTime = mirageSpawnTime + 1
 		else
-			mirageSpawnTime = mirageSpawnTime
-			env.player.mainSkill.skillData.timeOverride = 1
+			env.player.mainSkill.skillData.hitTimeOverride = 1
 		end
 
 		-- This is so that it's consistent with the info message but removing this could make it more accurate numbers wise
 		mirageSpawnTime = round(mirageSpawnTime, 2)
 
-		-- Scale dps with GC's cooldown
+		-- Scale dps with GC's cooldown / attack time
+		-- TODO This should use the contact point of the animation instead of the total attack time
+		cooldown = m_max(cooldown, mainSkillOutputCache.HitTime or mainSkillOutputCache.Time)
 		env.player.mainSkill.skillModList:NewMod("DPS", "MORE", (1 / cooldown - 1) * 100, "General's Cry Cooldown")
 
 		-- Does not use player resources
