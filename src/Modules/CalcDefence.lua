@@ -532,7 +532,7 @@ function calcs.resistances(actor)
 			end
 		end
 	end
-	
+
 	for _, resFrom in ipairs(resistTypeList) do
 		local res
 		for _, resTo in ipairs(resistTypeList) do
