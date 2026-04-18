@@ -5,7 +5,14 @@
 --
 local m_floor = math.floor
 local dkjson = require "dkjson"
-local queryModsData = LoadModule("Data/QueryMods")
+local queryModsData
+do
+	local queryModFile = io.open("Data/QueryMods.lua", "r")
+	if queryModFile then
+		queryModFile:close()
+		queryModsData = LoadModule("Data/QueryMods")
+	end
+end
 
 local M = {}
 
