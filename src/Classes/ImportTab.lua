@@ -808,12 +808,17 @@ local function snapshotSocketGroupReimportState(socketGroup, isMainGroup)
 	for gemIndex, gem in ipairs(socketGroup.gemList) do
 		gemStates[gemIndex] = {
 			enabled = gem.enabled,
+			count = gem.count,
 			skillPart = gem.skillPart,
 			skillPartCalcs = gem.skillPartCalcs,
 			skillStageCount = gem.skillStageCount,
 			skillStageCountCalcs = gem.skillStageCountCalcs,
 			skillMineCount = gem.skillMineCount,
 			skillMineCountCalcs = gem.skillMineCountCalcs,
+			skillMinion = gem.skillMinion,
+			skillMinionCalcs = gem.skillMinionCalcs,
+			skillMinionItemSet = gem.skillMinionItemSet,
+			skillMinionItemSetCalcs = gem.skillMinionItemSetCalcs,
 			skillMinionSkill = gem.skillMinionSkill,
 			skillMinionSkillCalcs = gem.skillMinionSkillCalcs,
 			enableGlobal1 = gem.enableGlobal1,
@@ -834,12 +839,17 @@ end
 
 local function applyGemReimportState(gem, state)
 	gem.enabled = state.enabled
+	gem.count = state.count
 	gem.skillPart = state.skillPart
 	gem.skillPartCalcs = state.skillPartCalcs
 	gem.skillStageCount = state.skillStageCount
 	gem.skillStageCountCalcs = state.skillStageCountCalcs
 	gem.skillMineCount = state.skillMineCount
 	gem.skillMineCountCalcs = state.skillMineCountCalcs
+	gem.skillMinion = state.skillMinion
+	gem.skillMinionCalcs = state.skillMinionCalcs
+	gem.skillMinionItemSet = state.skillMinionItemSet
+	gem.skillMinionItemSetCalcs = state.skillMinionItemSetCalcs
 	gem.skillMinionSkill = state.skillMinionSkill
 	gem.skillMinionSkillCalcs = state.skillMinionSkillCalcs
 	gem.enableGlobal1 = state.enableGlobal1

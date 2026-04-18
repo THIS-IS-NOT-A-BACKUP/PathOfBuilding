@@ -131,6 +131,33 @@ Added Fire Damage 1/0 DISABLED 1
 		assert.is_false(socketGroup.gemList[3].enabled)
 	end)
 
+	it("preserves active skill count when reimporting items and skills", function()
+		build.skillsTab:PasteSocketGroup([[
+Slot: Helmet
+Cleave 1/0  1
+Heavy Strike 1/0  1
+Added Fire Damage 1/0 DISABLED 1
+]])
+		runCallback("OnFrame")
+
+		local socketGroup = build.skillsTab.socketGroupList[1]
+		socketGroup.includeInFullDPS = true
+		socketGroup.mainActiveSkill = 2
+		socketGroup.gemList[2].count = 7
+		runCallback("OnFrame")
+
+		reimportSocketedItemsWithOptions("Iron Hat", "Helm", {
+			makeSocketedGemEntry(0, false, "Cleave", 1),
+			makeSocketedGemEntry(1, false, "Heavy Strike", 1),
+			makeSocketedGemEntry(2, true, "Added Fire Damage Support", 2),
+		}, false)
+
+		socketGroup = build.skillsTab.socketGroupList[1]
+		assert.are.equal("Helmet", socketGroup.slot)
+		assert.are.equal(2, socketGroup.mainActiveSkill)
+		assert.are.equal(7, socketGroup.gemList[2].count)
+	end)
+
 	it("preserves full DPS state and disabled gems when reimporting with deleted equipment", function()
 		build.skillsTab:PasteSocketGroup([[
 Slot: Helmet
@@ -222,5 +249,15 @@ Blight 20/0  1
 	
 	it("preserves minion skill when reimporting items and skills", function()
 		assertReimportPreservesSkillSubstate("Gloves", "Rawhide Gloves", "Gloves", "Summon Chaos Golem", "skillMinionSkill", 3)
+	end)
+
+	it("preserves minion type selection when reimporting items and skills", function()
+		assertReimportPreservesSkillSubstate("Gloves", "Rawhide Gloves", "Gloves", "Summon Skeletons", "skillMinion", "RaisedSkeletonCaster")
+	end)
+
+	it("preserves minion item set selection when reimporting items and skills", function()
+		local itemSet = build.itemsTab:NewItemSet()
+		table.insert(build.itemsTab.itemSetOrderList, itemSet.id)
+		assertReimportPreservesSkillSubstate("Weapon 1", "Driftwood Wand", "Weapon", "Animate Weapon", "skillMinionItemSet", itemSet.id)
 	end)
 end)
