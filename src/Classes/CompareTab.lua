@@ -14,9 +14,37 @@ local tradeHelpers = LoadModule("Classes/CompareTradeHelpers")
 local buySimilar = LoadModule("Classes/CompareBuySimilar")
 local calcsHelpers = LoadModule("Classes/CompareCalcsHelpers")
 local buildListHelpers = LoadModule("Modules/BuildListHelpers")
+local configVisibility = LoadModule("Modules/ConfigVisibility")
 
 -- Node IDs below this value are normal passive tree nodes; IDs at or above are cluster jewel nodes
 local CLUSTER_NODE_OFFSET = 65536
+
+-- Wrap a string into lines for a given pixel width at font height 14 ("VAR").
+-- Breaks BEFORE a word that would exceed the width, so rendered lines never
+-- overshoot into the next column.
+local function wrapInfoLine(str, width)
+	local lines = {}
+	if not str or str == "" or width <= 0 then
+		return lines
+	end
+	local lineStart = 1
+	local pos = 1
+	while pos <= #str do
+		local ws, we = str:find("%s+", pos)
+		local wordEnd = ws and (ws - 1) or #str
+		if lineStart < pos and DrawStringWidth(14, "VAR", str:sub(lineStart, wordEnd)) > width then
+			local committed = (str:sub(lineStart, pos - 1):gsub("%s+$", ""))
+			t_insert(lines, committed)
+			lineStart = pos
+		end
+		if not ws then
+			t_insert(lines, str:sub(lineStart))
+			break
+		end
+		pos = we + 1
+	end
+	return lines
+end
 
 -- Layout constants (shared across Draw, DrawConfig, DrawItems, DrawCalcs, etc.)
 local LAYOUT = {
@@ -40,6 +68,10 @@ local LAYOUT = {
 	itemsCopyUseBtnW = 78,
 	itemsCopyBtnH = 18,
 	itemsBuyBtnW = 60,
+	itemsMinColWidth = 700,
+	itemsHScrollBarHeight = 16,
+	compareColGap = 48,
+	skillsHScrollBarHeight = 16,
 
 	-- Calcs view
 	calcsMaxCardWidth = 400,
@@ -53,9 +85,10 @@ local LAYOUT = {
 	-- Config view (shared between Draw() layout and DrawConfig())
 	configRowHeight = 22,
 	configColumnHeaderHeight = 20,
-	configFixedHeaderHeight = 92,
+	configFixedHeaderHeight = 82,
 	configSectionWidth = 560,
-	configSectionGap = 18,
+	configSectionGap = 24,
+	configSectionColumnGap = 10,
 	configSectionInnerPad = 20,
 	configLabelOffset = 10,
 	configCol2 = 234,
@@ -102,6 +135,13 @@ local CompareTabClass = newClass("CompareTab", "ControlHost", "Control", functio
 
 	-- Scroll offset for scrollable views
 	self.scrollY = 0
+	self.itemsScrollX = 0
+	self.skillsScrollX = 0
+
+	-- Total content height for scroll clamping (populated at end of each Draw* pass)
+	self.summaryTotalContentHeight = 0
+	self.itemsTotalContentHeight = 0
+	self.skillsTotalContentHeight = 0
 
 	-- Tree layout cache (set in Draw, used by DrawTree)
 	self.treeLayout = nil
@@ -977,6 +1017,20 @@ function CompareTabClass:InitControls()
 	self.controls.calcsScrollBar.shown = function()
 		return self.compareViewMode == "CALCS" and self:GetActiveCompare() ~= nil and calcsScrollBar.enabled
 	end
+
+	-- Horizontal scrollbar for Items sub-tab
+	self.controls.itemsHScrollBar = new("ScrollBarControl", nil, {0, 0, 0, LAYOUT.itemsHScrollBarHeight}, 60, "HORIZONTAL", true)
+	local itemsHScrollBar = self.controls.itemsHScrollBar
+	self.controls.itemsHScrollBar.shown = function()
+		return self.compareViewMode == "ITEMS" and self:GetActiveCompare() ~= nil and itemsHScrollBar.enabled
+	end
+
+	-- Horizontal scrollbar for Skills sub-tab
+	self.controls.skillsHScrollBar = new("ScrollBarControl", nil, {0, 0, 0, LAYOUT.skillsHScrollBarHeight}, 60, "HORIZONTAL", true)
+	local skillsHScrollBar = self.controls.skillsHScrollBar
+	self.controls.skillsHScrollBar.shown = function()
+		return self.compareViewMode == "SKILLS" and self:GetActiveCompare() ~= nil and skillsHScrollBar.enabled
+	end
 end
 
 -- Get a short display name from a build name (strips "AccountName - " prefix)
@@ -1099,8 +1153,8 @@ function CompareTabClass:RebuildConfigControls(compareEntry)
 	local currentSection = nil
 	for _, varData in ipairs(configOptions) do
 		if varData.section then
-			-- Skip "Custom Modifiers" section
-			if varData.section ~= "Custom Modifiers" then
+			-- Skip sections not relevant in Compare view
+			if varData.section ~= "Custom Modifiers" and varData.section ~= "Map Modifiers and Player Debuffs" then
 				currentSection = { name = varData.section, col = varData.col, items = {} }
 				t_insert(self.configSections, currentSection)
 			else
@@ -1114,31 +1168,11 @@ function CompareTabClass:RebuildConfigControls(compareEntry)
 				self.controls["cfg_p_" .. varData.var] = pCtrl
 				self.controls["cfg_c_" .. varData.var] = cCtrl
 
-				-- Determine eligibility category (matches ConfigTab's isShowAllConfig logic)
-				local isHardConditional = varData.ifOption or varData.ifSkill
-					or varData.ifSkillData or varData.ifSkillFlag or varData.legacy
-				local isKeywordExcluded = false
-				if varData.label then
-					local labelLower = varData.label:lower()
-					for _, kw in ipairs({"recently", "in the last", "in the past", "in last", "in past", "pvp"}) do
-						if labelLower:find(kw) then
-							isKeywordExcluded = true
-							break
-						end
-					end
-				end
-				local hasAnyCondition = varData.ifCond or varData.ifOption or varData.ifSkill
-					or varData.ifSkillFlag or varData.ifSkillData or varData.ifSkillList
-					or varData.ifNode or varData.ifMod or varData.ifMult
-					or varData.ifEnemyStat or varData.ifEnemyCond or varData.legacy
-
 				local ctrlInfo = {
 					primaryControl = pCtrl,
 					compareControl = cCtrl,
 					varData = varData,
 					visible = false,
-					alwaysShow = not hasAnyCondition and not isKeywordExcluded,
-					showWithToggle = not isHardConditional and not isKeywordExcluded,
 				}
 				self.configControls[varData.var] = ctrlInfo
 				t_insert(self.configControlList, ctrlInfo)
@@ -1635,22 +1669,23 @@ function CompareTabClass:Draw(viewPort, inputEvents)
 		self.controls.itemsExpandedCheck.x = contentVP.x + 10 + self.controls.itemsExpandedCheck.labelWidth
 		self.controls.itemsExpandedCheck.y = contentVP.y + 8
 
-		local colWidth = m_floor(contentVP.width / 2)
+		local colWidth = self.itemsColWidth or m_max(m_floor(contentVP.width / 2), LAYOUT.itemsMinColWidth)
 		local itemSetLabelW = DrawStringWidth(16, "VAR", "^7Item set:") + 4
+		local scrollOffsetX = -((self.controls.itemsHScrollBar and self.controls.itemsHScrollBar.offset) or 0)
 
 		-- Item set dropdowns
 		local row1Y = contentVP.y + 34
 
 		-- Primary build item set dropdown
-		self.controls.primaryItemSetLabel.x = contentVP.x + 10
+		self.controls.primaryItemSetLabel.x = contentVP.x + scrollOffsetX + 10
 		self.controls.primaryItemSetLabel.y = row1Y + 2
-		self.controls.primaryItemSetSelect.x = contentVP.x + 10 + itemSetLabelW
+		self.controls.primaryItemSetSelect.x = contentVP.x + scrollOffsetX + 10 + itemSetLabelW
 		self.controls.primaryItemSetSelect.y = row1Y
 
 		-- Compare build item set dropdown
-		self.controls.compareItemSetLabel2.x = contentVP.x + colWidth + 10
+		self.controls.compareItemSetLabel2.x = contentVP.x + scrollOffsetX + colWidth + 10
 		self.controls.compareItemSetLabel2.y = row1Y + 2
-		self.controls.compareItemSetSelect2.x = contentVP.x + colWidth + 10 + itemSetLabelW
+		self.controls.compareItemSetSelect2.x = contentVP.x + scrollOffsetX + colWidth + 10 + itemSetLabelW
 		self.controls.compareItemSetSelect2.y = row1Y
 
 		-- Populate primary build item set list
@@ -1892,6 +1927,7 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 	local sectionGap = LAYOUT.configSectionGap
 	local fixedHeaderHeight = LAYOUT.configFixedHeaderHeight
 	local sectionWidth = LAYOUT.configSectionWidth
+	local columnStride = sectionWidth + LAYOUT.configSectionColumnGap
 	local scrollableH = contentVP.height - fixedHeaderHeight
 
 	-- Hide ALL config controls first (selectively shown below)
@@ -1921,8 +1957,13 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 				local isDiff = tostring(pVal) ~= tostring(cVal)
 				if isDiff then
 					t_insert(diffs, ctrlInfo)
-				elseif ctrlInfo.alwaysShow or (self.configToggle and ctrlInfo.showWithToggle) then
-					t_insert(commons, ctrlInfo)
+				else
+					local varData = ctrlInfo.varData
+					local relevant = configVisibility.isRelevantForBuild(varData, self.primaryBuild)
+							or configVisibility.isRelevantForBuild(varData, compareEntry)
+					if relevant or (self.configToggle and not configVisibility.isShowAllExcluded(varData)) then
+						t_insert(commons, ctrlInfo)
+					end
 				end
 			end
 		end
@@ -1944,7 +1985,7 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 	end
 
 	-- Second pass: multi-column placement (same algorithm as ConfigTab)
-	local maxCol = m_floor((contentVP.width - 10) / sectionWidth)
+	local maxCol = m_floor((contentVP.width - 10) / columnStride)
 	if maxCol < 1 then maxCol = 1 end
 	local colY = { 0 }
 	local maxColY = 0
@@ -1955,7 +1996,7 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 		local col
 		-- Try preferred column if it fits
 		if sec.col and (colY[sec.col] or 0) + h + 28 <= scrollableH
-				and 10 + sec.col * sectionWidth <= contentVP.width then
+				and 10 + sec.col * columnStride <= contentVP.width then
 			col = sec.col
 		else
 			-- Find shortest column
@@ -1968,7 +2009,7 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 			end
 		end
 		colY[col] = colY[col] or 0
-		sec.x = 10 + (col - 1) * sectionWidth
+		sec.x = 10 + (col - 1) * columnStride
 		sec.y = colY[col] + sectionGap
 		colY[col] = colY[col] + h + sectionGap
 		maxColY = m_max(maxColY, colY[col])
@@ -1977,6 +2018,8 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 
 	-- Third pass: position controls at absolute coords
 	local scrollTopAbs = contentVP.y + fixedHeaderHeight
+	local scrollBottomAbs = contentVP.y + contentVP.height
+	local ctrlH = rowHeight
 	for _, sec in ipairs(sectionLayout) do
 		local sectionAbsX = contentVP.x + sec.x
 		local rowY = sec.y + sectionInnerPad
@@ -1986,10 +2029,9 @@ function CompareTabClass:LayoutConfigView(contentVP, compareEntry)
 			ci.primaryControl.y = contentVP.y + fixedHeaderHeight + rowY - self.scrollY
 			ci.compareControl.x = sectionAbsX + LAYOUT.configCol3
 			ci.compareControl.y = contentVP.y + fixedHeaderHeight + rowY - self.scrollY
-			local capturedRowY = rowY
 			local shownFn = function()
-				local ay = contentVP.y + fixedHeaderHeight + capturedRowY - self.scrollY
-				return ay >= scrollTopAbs - 20 and ay < contentVP.y + contentVP.height
+				local ay = ci.primaryControl.y
+				return ay >= scrollTopAbs and ay + ctrlH <= scrollBottomAbs
 					and self.compareViewMode == "CONFIG" and self:GetActiveCompare() ~= nil
 			end
 			ci.primaryControl.shown = shownFn
@@ -2158,12 +2200,21 @@ function CompareTabClass:LayoutCalcsSkillControls(vp, compareEntry)
 	local pOutput = primaryEnv and primaryEnv.player and primaryEnv.player.output
 	local cOutput = compareEnv and compareEnv.player and compareEnv.player.output
 	if pOutput or cOutput then
+		local wrapWidth = colWidth - 8
+		local infoLabels = {
+			BuffList = "Aura/Buff Skills",
+			CombatList = "Combat Buffs",
+			CurseList = "Curses/Debuffs",
+		}
 		local infoKeys = { "BuffList", "CombatList", "CurseList" }
 		for _, key in ipairs(infoKeys) do
 			local pVal = pOutput and pOutput[key]
 			local cVal = cOutput and cOutput[key]
 			if (pVal and pVal ~= "") or (cVal and cVal ~= "") then
-				textLinesHeight = textLinesHeight + 18
+				local label = infoLabels[key]
+				local pLines = (pVal and pVal ~= "") and #wrapInfoLine(label .. ": " .. pVal, wrapWidth) or 0
+				local cLines = (cVal and cVal ~= "") and #wrapInfoLine(label .. ": " .. cVal, wrapWidth) or 0
+				textLinesHeight = textLinesHeight + m_max(pLines, cLines, 1) * 18
 			end
 		end
 	end
@@ -2196,11 +2247,19 @@ function CompareTabClass:HandleScrollInput(contentVP, inputEvents)
 				inputEvents[id] = nil
 			elseif event.key == "WHEELDOWN" and self.compareViewMode ~= "TREE" then
 				local maxScroll = 0
+				local viewportH = contentVP.height
 				if self.compareViewMode == "CONFIG" and self.configTotalContentHeight then
-					local scrollViewH = contentVP.height - LAYOUT.configFixedHeaderHeight
+					local scrollViewH = viewportH - LAYOUT.configFixedHeaderHeight
 					maxScroll = m_max(self.configTotalContentHeight - scrollViewH, 0)
-				else
-					maxScroll = 99999
+				elseif self.compareViewMode == "SUMMARY" and self.summaryTotalContentHeight > 0 then
+					maxScroll = m_max(self.summaryTotalContentHeight - viewportH, 0)
+				elseif self.compareViewMode == "ITEMS" and self.itemsTotalContentHeight > 0 then
+					local hBarReserve = self.controls.itemsHScrollBar.enabled and LAYOUT.itemsHScrollBarHeight or 0
+					local scrollViewH = viewportH - LAYOUT.itemsCheckboxOffset - hBarReserve
+					maxScroll = m_max(self.itemsTotalContentHeight - scrollViewH, 0)
+				elseif self.compareViewMode == "SKILLS" and self.skillsTotalContentHeight > 0 then
+					local hBarReserve = self.controls.skillsHScrollBar.enabled and LAYOUT.skillsHScrollBarHeight or 0
+					maxScroll = m_max(self.skillsTotalContentHeight - (viewportH - hBarReserve), 0)
 				end
 				self.scrollY = m_min(self.scrollY + 40, maxScroll)
 				inputEvents[id] = nil
@@ -3001,6 +3060,8 @@ function CompareTabClass:DrawSummary(vp, compareEntry)
 
 	drawY = drawY + listHeight + 20 -- bottom padding
 
+	self.summaryTotalContentHeight = drawY + self.scrollY + 36
+
 	SetViewport()
 end
 
@@ -3191,19 +3252,29 @@ end
 -- Draw a single item's full details at (x, startY) within colWidth.
 -- otherModMap: optional table from buildModMap() of the other item for diff highlighting.
 -- Returns the total height consumed.
-function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap)
+function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap, measureMode)
 	local lineHeight = 16
 	local fontSize = 14
 	local drawY = startY
+	local maxLineW = 0
+	local function emit(lx, ly, align, fs, fstyle, str)
+		if measureMode then
+			local w = DrawStringWidth(fs, fstyle, str)
+			if w > maxLineW then maxLineW = w end
+		else
+			DrawString(lx, ly, align, fs, fstyle, str)
+		end
+	end
 
 	if not item then
-		DrawString(x, drawY, "LEFT", fontSize, "VAR", "^8(empty)")
+		emit(x, drawY, "LEFT", fontSize, "VAR", "^8(empty)")
+		if measureMode then return maxLineW end
 		return lineHeight
 	end
 
 	-- Item name
 	local rarityColor = tradeHelpers.getRarityColor(item)
-	DrawString(x, drawY, "LEFT", 16, "VAR", rarityColor .. item.name)
+	emit(x, drawY, "LEFT", 16, "VAR", rarityColor .. item.name)
 	drawY = drawY + 18
 
 	-- Base type label
@@ -3213,47 +3284,47 @@ function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap
 			local weaponData = item.weaponData and item.weaponData[1]
 			if weaponData then
 				if weaponData.PhysicalDPS then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FPhys DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.PhysicalDPS))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FPhys DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.PhysicalDPS))
 					drawY = drawY + lineHeight
 				end
 				if weaponData.ElementalDPS then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FEle DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.ElementalDPS))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FEle DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.ElementalDPS))
 					drawY = drawY + lineHeight
 				end
 				if weaponData.ChaosDPS then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FChaos DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.ChaosDPS))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FChaos DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.ChaosDPS))
 					drawY = drawY + lineHeight
 				end
 				if weaponData.TotalDPS then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FTotal DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.TotalDPS))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FTotal DPS: " .. colorCodes.MAGIC .. "%.1f", weaponData.TotalDPS))
 					drawY = drawY + lineHeight
 				end
-				DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FCrit: " .. colorCodes.MAGIC .. "%.2f%%", weaponData.CritChance))
+				emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FCrit: " .. colorCodes.MAGIC .. "%.2f%%", weaponData.CritChance))
 				drawY = drawY + lineHeight
-				DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FAPS: " .. colorCodes.MAGIC .. "%.2f", weaponData.AttackRate))
+				emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FAPS: " .. colorCodes.MAGIC .. "%.2f", weaponData.AttackRate))
 				drawY = drawY + lineHeight
 			end
 		elseif base.armour then
 			local armourData = item.armourData
 			if armourData then
 				if armourData.Armour and armourData.Armour > 0 then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FArmour: " .. colorCodes.MAGIC .. "%d", armourData.Armour))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FArmour: " .. colorCodes.MAGIC .. "%d", armourData.Armour))
 					drawY = drawY + lineHeight
 				end
 				if armourData.Evasion and armourData.Evasion > 0 then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FEvasion: " .. colorCodes.MAGIC .. "%d", armourData.Evasion))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FEvasion: " .. colorCodes.MAGIC .. "%d", armourData.Evasion))
 					drawY = drawY + lineHeight
 				end
 				if armourData.EnergyShield and armourData.EnergyShield > 0 then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FES: " .. colorCodes.MAGIC .. "%d", armourData.EnergyShield))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FES: " .. colorCodes.MAGIC .. "%d", armourData.EnergyShield))
 					drawY = drawY + lineHeight
 				end
 				if armourData.Ward and armourData.Ward > 0 then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FWard: " .. colorCodes.MAGIC .. "%d", armourData.Ward))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FWard: " .. colorCodes.MAGIC .. "%d", armourData.Ward))
 					drawY = drawY + lineHeight
 				end
 				if armourData.BlockChance and armourData.BlockChance > 0 then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FBlock: " .. colorCodes.MAGIC .. "%d%%", armourData.BlockChance))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FBlock: " .. colorCodes.MAGIC .. "%d%%", armourData.BlockChance))
 					drawY = drawY + lineHeight
 				end
 			end
@@ -3261,26 +3332,26 @@ function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap
 			local flaskData = item.flaskData
 			if flaskData then
 				if flaskData.lifeTotal then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FLife: " .. colorCodes.MAGIC .. "%d ^x7F7F7F(%.1fs)", flaskData.lifeTotal, flaskData.duration or 0))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FLife: " .. colorCodes.MAGIC .. "%d ^x7F7F7F(%.1fs)", flaskData.lifeTotal, flaskData.duration or 0))
 					drawY = drawY + lineHeight
 				end
 				if flaskData.manaTotal then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FMana: " .. colorCodes.MAGIC .. "%d ^x7F7F7F(%.1fs)", flaskData.manaTotal, flaskData.duration or 0))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FMana: " .. colorCodes.MAGIC .. "%d ^x7F7F7F(%.1fs)", flaskData.manaTotal, flaskData.duration or 0))
 					drawY = drawY + lineHeight
 				end
 				if not flaskData.lifeTotal and not flaskData.manaTotal and flaskData.duration then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FDuration: " .. colorCodes.MAGIC .. "%.2fs", flaskData.duration))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FDuration: " .. colorCodes.MAGIC .. "%.2fs", flaskData.duration))
 					drawY = drawY + lineHeight
 				end
 				if flaskData.chargesUsed and flaskData.chargesMax then
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FCharges: " .. colorCodes.MAGIC .. "%d/%d", flaskData.chargesUsed, flaskData.chargesMax))
+					emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FCharges: " .. colorCodes.MAGIC .. "%d/%d", flaskData.chargesUsed, flaskData.chargesMax))
 					drawY = drawY + lineHeight
 				end
 				-- Flask buff mods
 				if item.buffModLines then
 					for _, modLine in pairs(item.buffModLines) do
 						local color = modLine.extra and colorCodes.UNSUPPORTED or colorCodes.MAGIC
-						DrawString(x, drawY, "LEFT", fontSize, "VAR", color .. modLine.line)
+						emit(x, drawY, "LEFT", fontSize, "VAR", color .. modLine.line)
 						drawY = drawY + lineHeight
 					end
 				end
@@ -3289,7 +3360,7 @@ function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap
 
 		-- Quality (if not shown in type-specific section)
 		if item.quality and item.quality > 0 and not base.weapon and not base.armour and not base.flask then
-			DrawString(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FQuality: " .. colorCodes.MAGIC .. "+%d%%", item.quality))
+			emit(x, drawY, "LEFT", fontSize, "VAR", s_format("^x7F7F7FQuality: " .. colorCodes.MAGIC .. "+%d%%", item.quality))
 			drawY = drawY + lineHeight
 		end
 	end
@@ -3325,7 +3396,7 @@ function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap
 						end
 						-- If exact match (same line text), no indicator — it's identical
 					end
-					DrawString(x, drawY, "LEFT", fontSize, "VAR", formatted)
+					emit(x, drawY, "LEFT", fontSize, "VAR", formatted)
 					drawY = drawY + lineHeight
 					drewAny = true
 				end
@@ -3338,18 +3409,19 @@ function CompareTabClass:DrawItemExpanded(item, x, startY, colWidth, otherModMap
 
 	-- Corrupted/Split/Mirrored
 	if item.corrupted then
-		DrawString(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Corrupted")
+		emit(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Corrupted")
 		drawY = drawY + lineHeight
 	end
 	if item.split then
-		DrawString(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Split")
+		emit(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Split")
 		drawY = drawY + lineHeight
 	end
 	if item.mirrored then
-		DrawString(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Mirrored")
+		emit(x, drawY, "LEFT", fontSize, "VAR", colorCodes.NEGATIVE .. "Mirrored")
 		drawY = drawY + lineHeight
 	end
 
+	if measureMode then return maxLineW end
 	return drawY - startY
 end
 
@@ -3369,11 +3441,94 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 	local primaryEnv = self.primaryBuild.calcsTab and self.primaryBuild.calcsTab.mainEnv
 	local primaryHasRing3 = primaryEnv and primaryEnv.modDB:Flag(nil, "AdditionalRingSlot")
 	local lineHeight = 20
-	local colWidth = m_floor(vp.width / 2)
+
+	-- Fetch jewel slots once so we can factor their labels and items into width measurement.
+	local jewelSlots = self:GetJewelComparisonSlots(compareEntry)
+
+	-- Unified max slot label width across base + jewel slots
+	local maxLabelW = 0
+	for _, sn in ipairs(baseSlots) do
+		local w = DrawStringWidth(16, "VAR", "^7" .. sn .. ":")
+		if w > maxLabelW then maxLabelW = w end
+	end
+	for _, jE in ipairs(jewelSlots) do
+		local w = DrawStringWidth(16, "VAR", "^7" .. jE.label .. ":")
+		if w > maxLabelW then maxLabelW = w end
+	end
+	maxLabelW = maxLabelW + 2
+
+	-- Measure widest primary-side content to decide compare column x-offset
+	local primaryContentW
+	if self.itemsExpandedMode then
+		-- Expanded mode: measure the widest rendered line of every primary item card
+		local widest = 0
+		local pItems = self.primaryBuild.itemsTab and self.primaryBuild.itemsTab.items
+		local pSlots = self.primaryBuild.itemsTab and self.primaryBuild.itemsTab.slots
+		for _, slotName in ipairs(baseSlots) do
+			local pSlot = pSlots and pSlots[slotName]
+			local pItem = pSlot and pItems and pItems[pSlot.selItemId]
+			if pItem then
+				local w = self:DrawItemExpanded(pItem, 0, 0, 0, nil, true) or 0
+				if w > widest then widest = w end
+			end
+		end
+		for _, jE in ipairs(jewelSlots) do
+			if jE.pItem then
+				local w = self:DrawItemExpanded(jE.pItem, 0, 0, 0, nil, true) or 0
+				if w > widest then widest = w end
+			end
+		end
+		-- Label row in expanded mode: drawn at x=10, diff label drawn right-aligned at colWidth-10
+		local labelRowW = 10 + DrawStringWidth(16, "VAR", "^7" .. baseSlots[1] .. ":")
+		-- Item card drawn at x + 20, so total primary-column content width is 20 + widestLine + 10 padding
+		primaryContentW = m_max(20 + widest + 10, labelRowW)
+	else
+		-- Compact mode
+		local maxDiffW = 0
+		local pItems = self.primaryBuild.itemsTab and self.primaryBuild.itemsTab.items
+		local pSlots = self.primaryBuild.itemsTab and self.primaryBuild.itemsTab.slots
+		local cItems = compareEntry.itemsTab and compareEntry.itemsTab.items
+		local cSlots = compareEntry.itemsTab and compareEntry.itemsTab.slots
+		local function measureDiff(pItem, cItem)
+			local lbl = tradeHelpers.getSlotDiffLabel(pItem, cItem)
+			if lbl and lbl ~= "" then
+				local w = DrawStringWidth(14, "VAR", lbl)
+				if w > maxDiffW then maxDiffW = w end
+			end
+		end
+		for _, slotName in ipairs(baseSlots) do
+			local pSlot = pSlots and pSlots[slotName]
+			local cSlot = cSlots and cSlots[slotName]
+			local pItem = pSlot and pItems and pItems[pSlot.selItemId]
+			local cItem = cSlot and cItems and cItems[cSlot.selItemId]
+			measureDiff(pItem, cItem)
+		end
+		for _, jE in ipairs(jewelSlots) do
+			measureDiff(jE.pItem, jE.cItem)
+		end
+		primaryContentW = 10 + maxLabelW + 4 + tradeHelpers.ITEM_BOX_W + 6 + maxDiffW
+	end
+
+	local colWidth = primaryContentW + LAYOUT.compareColGap
+	local contentWidth = colWidth * 2
+	local needsHScroll = contentWidth > vp.width
+	self.itemsColWidth = colWidth
 
 	local checkboxOffset = LAYOUT.itemsCheckboxOffset
-	SetViewport(vp.x, vp.y + checkboxOffset, vp.width, vp.height - checkboxOffset)
+
+	-- Position + configure the horizontal scrollbar
+	local hBar = self.controls.itemsHScrollBar
+	hBar.x = vp.x
+	hBar.y = vp.y + vp.height - LAYOUT.itemsHScrollBarHeight
+	hBar.width = vp.width
+	hBar:SetContentDimension(contentWidth, vp.width)
+	self.itemsScrollX = hBar.offset
+
+	local bottomReserve = needsHScroll and LAYOUT.itemsHScrollBarHeight or 0
+	local scrollViewH = vp.height - checkboxOffset - bottomReserve
+	SetViewport(vp.x, vp.y + checkboxOffset, vp.width, scrollViewH)
 	local drawY = 4 - self.scrollY
+	local scrollOffsetX = -self.itemsScrollX
 
 	-- Get cursor position relative to viewport for hover detection
 	local cursorX, cursorY = GetCursorPos()
@@ -3398,17 +3553,9 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 
 	-- Headers
 	SetDrawColor(1, 1, 1)
-	DrawString(10, drawY, "LEFT", 18, "VAR", colorCodes.POSITIVE .. self:GetShortBuildName(self.primaryBuild.buildName))
-	DrawString(colWidth + 10, drawY, "LEFT", 18, "VAR", colorCodes.WARNING .. (compareEntry.label or "Compare Build"))
+	DrawString(scrollOffsetX + 10, drawY, "LEFT", 18, "VAR", colorCodes.POSITIVE .. self:GetShortBuildName(self.primaryBuild.buildName))
+	DrawString(scrollOffsetX + colWidth + 10, drawY, "LEFT", 18, "VAR", colorCodes.WARNING .. (compareEntry.label or "Compare Build"))
 	drawY = drawY + 24
-
-	-- Pre-compute max slot label width for alignment
-	local maxLabelW = 0
-	for _, sn in ipairs(baseSlots) do
-		local w = DrawStringWidth(16, "VAR", "^7" .. sn .. ":")
-		if w > maxLabelW then maxLabelW = w end
-	end
-	maxLabelW = maxLabelW + 2
 
 	-- Helper: process copy/buy button hover state and click events for a slot.
 	-- Closes over hoverCopyUse*/clicked* locals above.
@@ -3444,11 +3591,12 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 		if self.itemsExpandedMode then
 			-- === EXPANDED MODE ===
 			SetDrawColor(1, 1, 1)
-			DrawString(10, drawY, "LEFT", 16, "VAR", "^7" .. label .. ":" .. (pWarn or ""))
-			DrawString(colWidth - 10, drawY, "RIGHT", 14, "VAR", tradeHelpers.getSlotDiffLabel(pItem, cItem))
+			DrawString(scrollOffsetX + 10, drawY, "LEFT", 16, "VAR", "^7" .. label .. ":" .. (pWarn or ""))
+			local labelEndW = DrawStringWidth(16, "VAR", "^7" .. label .. ":" .. (pWarn or ""))
+			DrawString(scrollOffsetX + 10 + labelEndW + 8, drawY + 2, "LEFT", 14, "VAR", tradeHelpers.getSlotDiffLabel(pItem, cItem))
 
 			if cItem then
-				local b1Hover, b2Hover, b3Hover, b2X, b2Y, b2W, b2H = tradeHelpers.drawCopyButtons(cursorX, cursorY, vp.width - 214, drawY + 1, slotMissing, LAYOUT.itemsCopyBtnW, LAYOUT.itemsCopyBtnH, LAYOUT.itemsBuyBtnW, LAYOUT.itemsCopyUseBtnW)
+				local b1Hover, b2Hover, b3Hover, b2X, b2Y, b2W, b2H = tradeHelpers.drawCopyButtons(cursorX, cursorY, scrollOffsetX + contentWidth - 214, drawY + 21, slotMissing, LAYOUT.itemsCopyBtnW, LAYOUT.itemsCopyBtnH, LAYOUT.itemsBuyBtnW, LAYOUT.itemsCopyUseBtnW)
 				processSlotButtons(b1Hover, b2Hover, b3Hover, b2X, b2Y, b2W, b2H, cItem, copySlotName, copyUseSlotName)
 			end
 
@@ -3457,12 +3605,12 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 			local pModMap = tradeHelpers.buildModMap(pItem)
 			local cModMap = tradeHelpers.buildModMap(cItem)
 			local itemStartY = drawY
-			local leftHeight = self:DrawItemExpanded(pItem, 20, drawY, colWidth - 30, cModMap)
-			local rightHeight = self:DrawItemExpanded(cItem, colWidth + 20, drawY, colWidth - 30, pModMap)
+			local leftHeight = self:DrawItemExpanded(pItem, scrollOffsetX + 20, drawY, colWidth - 30, cModMap)
+			local rightHeight = self:DrawItemExpanded(cItem, scrollOffsetX + colWidth + 20, drawY, colWidth - 30, pModMap)
 
 			SetDrawColor(0.25, 0.25, 0.25)
 			local maxH = m_max(leftHeight, rightHeight)
-			DrawImage(nil, colWidth, itemStartY, 1, maxH)
+			DrawImage(nil, scrollOffsetX + colWidth, itemStartY, 1, maxH)
 
 			drawY = drawY + maxH + 6
 		else
@@ -3472,7 +3620,7 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 				tradeHelpers.drawCompactSlotRow(drawY, label, pItem, cItem,
 					colWidth, cursorX, cursorY, labelW,
 					self.primaryBuild.itemsTab, compareEntry.itemsTab, pWarn, cWarn, slotMissing,
-					LAYOUT.itemsCopyBtnW, LAYOUT.itemsCopyBtnH, LAYOUT.itemsBuyBtnW, LAYOUT.itemsCopyUseBtnW)
+					LAYOUT.itemsCopyBtnW, LAYOUT.itemsCopyBtnH, LAYOUT.itemsBuyBtnW, LAYOUT.itemsCopyUseBtnW, scrollOffsetX)
 
 			if rowHoverItem then
 				hoverItem = rowHoverItem
@@ -3488,11 +3636,6 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 	end
 
 	for _, slotName in ipairs(baseSlots) do
-		-- Separator
-		SetDrawColor(0.3, 0.3, 0.3)
-		DrawImage(nil, 4, drawY, vp.width - 8, 1)
-		drawY = drawY + 2
-
 		-- Get items from both builds
 		local pSlot = self.primaryBuild.itemsTab and self.primaryBuild.itemsTab.slots and self.primaryBuild.itemsTab.slots[slotName]
 		local cSlot = compareEntry.itemsTab and compareEntry.itemsTab.slots and compareEntry.itemsTab.slots[slotName]
@@ -3504,23 +3647,20 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 	end
 
 	-- === TREE SET DROPDOWNS ===
-	drawY = drawY + 12
-	SetDrawColor(0.5, 0.5, 0.5)
-	DrawImage(nil, 4, drawY, vp.width - 8, 1)
-	drawY = drawY + 10
+	drawY = drawY + 22
 
 	-- Convert drawY to absolute screen coords for control positioning
 	local absY = vp.y + checkboxOffset + drawY
 	local treeSetLabelW = DrawStringWidth(16, "VAR", "^7Tree set:") + 4
 
-	self.controls.primaryTreeSetLabel.x = vp.x + 10
+	self.controls.primaryTreeSetLabel.x = vp.x + scrollOffsetX + 10
 	self.controls.primaryTreeSetLabel.y = absY + 2
-	self.controls.primaryTreeSetSelect.x = vp.x + 10 + treeSetLabelW
+	self.controls.primaryTreeSetSelect.x = vp.x + scrollOffsetX + 10 + treeSetLabelW
 	self.controls.primaryTreeSetSelect.y = absY
 
-	self.controls.compareTreeSetLabel.x = vp.x + colWidth + 10
+	self.controls.compareTreeSetLabel.x = vp.x + scrollOffsetX + colWidth + 10
 	self.controls.compareTreeSetLabel.y = absY + 2
-	self.controls.compareTreeSetSelect.x = vp.x + colWidth + 10 + treeSetLabelW
+	self.controls.compareTreeSetSelect.x = vp.x + scrollOffsetX + colWidth + 10 + treeSetLabelW
 	self.controls.compareTreeSetSelect.y = absY
 
 	-- Populate tree set lists
@@ -3536,33 +3676,18 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 	drawY = drawY + 24
 
 	-- === JEWELS SECTION ===
-	local jewelSlots = self:GetJewelComparisonSlots(compareEntry)
 	if #jewelSlots > 0 then
 		-- Section header
 		SetDrawColor(1, 1, 1)
-		DrawString(10, drawY, "LEFT", 16, "VAR", "^7-- Jewels --")
+		DrawString(scrollOffsetX + 10, drawY, "LEFT", 16, "VAR", "^7-- Jewels --")
 		drawY = drawY + 20
 
-		-- Pre-compute max jewel label width for alignment
-		local maxJewelLabelW = maxLabelW
-		for _, jE in ipairs(jewelSlots) do
-			local w = DrawStringWidth(16, "VAR", "^7" .. jE.label .. ":") + 2
-			if w > maxJewelLabelW then maxJewelLabelW = w end
-		end
-
 		for jIdx, jEntry in ipairs(jewelSlots) do
-			-- Separator (skip before first jewel since section header already has one)
-			if jIdx > 1 then
-				SetDrawColor(0.3, 0.3, 0.3)
-				DrawImage(nil, 4, drawY, vp.width - 8, 1)
-				drawY = drawY + 2
-			end
-
 			-- Tree allocation warning text
 			local pWarn = (jEntry.pItem and not jEntry.pNodeAllocated) and colorCodes.WARNING .. "  (tree missing allocated node)" or ""
 			local cWarn = (jEntry.cItem and not jEntry.cNodeAllocated) and colorCodes.WARNING .. "  (tree missing allocated node)" or ""
 
-			drawSlotEntry(jEntry.label, jEntry.pItem, jEntry.cItem, jEntry.cSlotName, jEntry.pSlotName, maxJewelLabelW, pWarn, cWarn, nil)
+			drawSlotEntry(jEntry.label, jEntry.pItem, jEntry.cItem, jEntry.cSlotName, jEntry.pSlotName, maxLabelW, pWarn, cWarn, nil)
 		end
 	end
 
@@ -3633,6 +3758,8 @@ function CompareTabClass:DrawItems(vp, compareEntry, inputEvents)
 		SetDrawLayer(nil, 0)
 	end
 
+	self.itemsTotalContentHeight = drawY + self.scrollY + 36
+
 	SetViewport()
 end
 
@@ -3641,26 +3768,50 @@ end
 -- ============================================================
 function CompareTabClass:DrawSkills(vp, compareEntry)
 	local lineHeight = 18
-	local colWidth = m_floor(vp.width / 2)
-
-	SetViewport(vp.x, vp.y, vp.width, vp.height)
-	local drawY = 4 - self.scrollY
-
-	-- Headers
-	SetDrawColor(1, 1, 1)
-	DrawString(10, drawY, "LEFT", 18, "VAR", colorCodes.POSITIVE .. self:GetShortBuildName(self.primaryBuild.buildName))
-	DrawString(colWidth + 10, drawY, "LEFT", 18, "VAR", colorCodes.WARNING .. (compareEntry.label or "Compare Build"))
-	drawY = drawY + 24
 
 	-- Get socket groups from both builds
-	local pGroups = self.primaryBuild.skillsTab and self.primaryBuild.skillsTab.socketGroupList or {}
-	local cGroups = compareEntry.skillsTab and compareEntry.skillsTab.socketGroupList or {}
+	local pSkillsTab = self.primaryBuild.skillsTab
+	local cSkillsTab = compareEntry.skillsTab
+	local pGroups = pSkillsTab and pSkillsTab.socketGroupList or {}
+	local cGroups = cSkillsTab and cSkillsTab.socketGroupList or {}
+
+	-- Imbued supports live on socketGroup.imbuedSupport (a name string) rather than in gemList,
+	-- so synthesize a minimal gem-like entry that the rendering can treat like any other gem
+	local imbuedGemCache = {}
+	local function getImbuedGem(group, skillsTab)
+		if not group or not group.imbuedSupport then return nil end
+		if imbuedGemCache[group] then return imbuedGemCache[group] end
+		-- Prefer the grantedEffect cached on skillsTab; fall back to a direct data lookup
+		-- (mirrors SkillsTab:RebuildImbuedSupportBySlot) in case the tab hasn't been primed.
+		local grantedEffect = skillsTab and skillsTab.imbuedSupportBySlot and group.slot and skillsTab.imbuedSupportBySlot[group.slot]
+		if not grantedEffect then
+			local gemId = data.gemForBaseName and data.gemForBaseName[group.imbuedSupport:lower() .. " support"]
+			grantedEffect = gemId and data.gems[gemId] and data.gems[gemId].grantedEffect or nil
+		end
+		local entry = {
+			grantedEffect = grantedEffect,
+			nameSpec = group.imbuedSupport,
+			level = 1,
+			quality = 0,
+			color = grantedEffect and data.skillColorMap[grantedEffect.color] or nil,
+			isImbuedSupport = true,
+		}
+		imbuedGemCache[group] = entry
+		return entry
+	end
 
 	-- Helper: get the set of gem names in a socket group
-	local function getGemNameSet(group)
+	local function getGemNameSet(group, skillsTab)
 		local set = {}
 		for _, gem in ipairs(group.gemList or {}) do
 			local name = gem.grantedEffect and gem.grantedEffect.name or gem.nameSpec
+			if name then
+				set[name] = true
+			end
+		end
+		local imbuedGem = getImbuedGem(group, skillsTab)
+		if imbuedGem then
+			local name = imbuedGem.grantedEffect and imbuedGem.grantedEffect.name or imbuedGem.nameSpec
 			if name then
 				set[name] = true
 			end
@@ -3688,11 +3839,11 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 	-- Build gem name sets for all groups
 	local pSets = {}
 	for i, group in ipairs(pGroups) do
-		pSets[i] = getGemNameSet(group)
+		pSets[i] = getGemNameSet(group, pSkillsTab)
 	end
 	local cSets = {}
 	for i, group in ipairs(cGroups) do
-		cSets[i] = getGemNameSet(group)
+		cSets[i] = getGemNameSet(group, cSkillsTab)
 	end
 
 	-- Compute all pairwise similarity scores
@@ -3736,6 +3887,12 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 
 	-- Helper: check if gemA supports gemB (mirrors GemSelectControl:CheckSupporting)
 	local function checkSupporting(gemA, gemB)
+		-- Synthesized imbued-support entries lack gemData/supportEffect wiring, but by definition
+		-- they support any active (non-support) gem in the group.
+		if gemA.isImbuedSupport then
+			local bEffect = gemB.grantedEffect or (gemB.gemData and gemB.gemData.grantedEffect)
+			return bEffect and not bEffect.support or false
+		end
 		if not gemA.gemData or not gemB.gemData then return false end
 		return (gemA.gemData.grantedEffect and gemA.gemData.grantedEffect.support
 			and gemB.gemData.grantedEffect and not gemB.gemData.grantedEffect.support
@@ -3750,7 +3907,24 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 
 	local gemFontSize = 16
 	local gemLineHeight = 18
-	local gemTextWidth = colWidth - 30
+
+	-- Helper: build the exact string drawGemList will render (used for both drawing and width measurement)
+	local function buildGemDisplayString(entry)
+		if entry.status == "missing" then
+			return colorCodes.NEGATIVE .. "- " .. entry.name .. "^7"
+		elseif entry.gem then
+			local gemName = entry.gem.grantedEffect and entry.gem.grantedEffect.name or entry.gem.nameSpec or "?"
+			local gemColor = entry.gem.color or colorCodes.GEM
+			local levelStr = entry.gem.level and (" Lv" .. entry.gem.level) or ""
+			local qualStr = entry.gem.quality and entry.gem.quality > 0 and ("/" .. entry.gem.quality .. "q") or ""
+			local prefix = ""
+			if entry.status == "additional" then
+				prefix = colorCodes.POSITIVE .. "+ "
+			end
+			return prefix .. gemColor .. gemName .. "^7" .. levelStr .. qualStr
+		end
+		return ""
+	end
 
 	-- Helper: build aligned display lists for a matched pair of groups
 	-- Common gems appear first, then additional, then missing
@@ -3758,49 +3932,58 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 		return gem.grantedEffect and gem.grantedEffect.name or gem.nameSpec
 	end
 
+	-- Helper: build an iterable gem list for a group that appends its imbued support (if any)
+	local function getGemsWithImbued(group, skillsTab)
+		if not group then return {} end
+		local gems = {}
+		for _, gem in ipairs(group.gemList or {}) do
+			t_insert(gems, gem)
+		end
+		local imbuedGem = getImbuedGem(group, skillsTab)
+		if imbuedGem then
+			t_insert(gems, imbuedGem)
+		end
+		return gems
+	end
+
 	local function buildAlignedGemLists(pGroup, cGroup, pSet, cSet)
 		local pDisplay = {}
 		local cDisplay = {}
 
+		local pGems = getGemsWithImbued(pGroup, pSkillsTab)
+		local cGems = getGemsWithImbued(cGroup, cSkillsTab)
+
 		-- Build name->gem lookup for compare side (common gems only)
 		local cGemByName = {}
-		if cGroup then
-			for _, gem in ipairs(cGroup.gemList or {}) do
-				local name = getGemName(gem)
-				if name and pSet[name] and not cGemByName[name] then
-					cGemByName[name] = gem
-				end
+		for _, gem in ipairs(cGems) do
+			local name = getGemName(gem)
+			if name and pSet[name] and not cGemByName[name] then
+				cGemByName[name] = gem
 			end
 		end
 
 		-- Common gems in primary build's order
 		local emittedCommon = {}
-		if pGroup then
-			for _, gem in ipairs(pGroup.gemList or {}) do
-				local name = getGemName(gem)
-				if name and cSet[name] and not emittedCommon[name] then
-					emittedCommon[name] = true
-					t_insert(pDisplay, { gem = gem, name = name, status = "common" })
-					t_insert(cDisplay, { gem = cGemByName[name], name = name, status = "common" })
-				end
+		for _, gem in ipairs(pGems) do
+			local name = getGemName(gem)
+			if name and cSet[name] and not emittedCommon[name] then
+				emittedCommon[name] = true
+				t_insert(pDisplay, { gem = gem, name = name, status = "common" })
+				t_insert(cDisplay, { gem = cGemByName[name], name = name, status = "common" })
 			end
 		end
 
 		-- Additional gems (unique to each side), preserving original order
-		if pGroup then
-			for _, gem in ipairs(pGroup.gemList or {}) do
-				local name = getGemName(gem)
-				if name and not cSet[name] then
-					t_insert(pDisplay, { gem = gem, name = name, status = "additional" })
-				end
+		for _, gem in ipairs(pGems) do
+			local name = getGemName(gem)
+			if name and not cSet[name] then
+				t_insert(pDisplay, { gem = gem, name = name, status = "additional" })
 			end
 		end
-		if cGroup then
-			for _, gem in ipairs(cGroup.gemList or {}) do
-				local name = getGemName(gem)
-				if name and not pSet[name] then
-					t_insert(cDisplay, { gem = gem, name = name, status = "additional" })
-				end
+		for _, gem in ipairs(cGems) do
+			local name = getGemName(gem)
+			if name and not pSet[name] then
+				t_insert(cDisplay, { gem = gem, name = name, status = "additional" })
 			end
 		end
 
@@ -3840,45 +4023,93 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 	end
 
 	-- Helper: draw a list of gems (common, additional, missing) at a given x offset
-	local function drawGemList(displayList, xOffset, startY, highlightSet)
+	local function drawGemList(displayList, xOffset, startY, highlightSet, gemTextWidth)
 		local y = startY
 		for _, entry in ipairs(displayList) do
-			if entry.status == "missing" then
-				DrawString(xOffset, y, "LEFT", gemFontSize, "VAR", colorCodes.NEGATIVE .. "- " .. entry.name .. "^7")
-			elseif entry.gem then
-				if highlightSet[entry.gem] then
-					SetDrawColor(0.33, 1, 0.33, 0.25)
-					DrawImage(nil, xOffset, y, gemTextWidth, gemLineHeight)
-				end
-				local gemName = entry.gem.grantedEffect and entry.gem.grantedEffect.name or entry.gem.nameSpec or "?"
-				local gemColor = entry.gem.color or colorCodes.GEM
-				local levelStr = entry.gem.level and (" Lv" .. entry.gem.level) or ""
-				local qualStr = entry.gem.quality and entry.gem.quality > 0 and ("/" .. entry.gem.quality .. "q") or ""
-				local prefix = ""
-				if entry.status == "additional" then
-					prefix = colorCodes.POSITIVE .. "+ "
-				end
-				DrawString(xOffset, y, "LEFT", gemFontSize, "VAR", prefix .. gemColor .. gemName .. "^7" .. levelStr .. qualStr)
+			if entry.gem and highlightSet[entry.gem] then
+				SetDrawColor(0.33, 1, 0.33, 0.25)
+				DrawImage(nil, xOffset, y, gemTextWidth, gemLineHeight)
+			end
+			local line = buildGemDisplayString(entry)
+			if line ~= "" then
+				DrawString(xOffset, y, "LEFT", gemFontSize, "VAR", line)
 			end
 			y = y + gemLineHeight
 		end
 		return y
 	end
 
-	-- Position pre-pass: compute gem positions without drawing to enable hover hit-testing
-	local gemEntries = {} -- { gem, x, y, group }
-	local preY = 4 - self.scrollY + 24 -- after headers
-	for _, pair in ipairs(renderPairs) do
-		preY = preY + 2 -- separator
+	-- Build display lists once and measure widest primary-side content
+	local function getGroupLabel(group, idx)
+		local groupLabel = group.displayLabel or group.label or ("Group " .. idx)
+		if group.slot then
+			groupLabel = groupLabel .. " (" .. group.slot .. ")"
+		end
+		return groupLabel
+	end
+
+	local displayListsByPair = {}
+	local maxPrimaryW = 0
+	for idx, pair in ipairs(renderPairs) do
 		local pSet = pair.pIdx and pSets[pair.pIdx] or {}
 		local cSet = pair.cIdx and cSets[pair.cIdx] or {}
-
 		local pGroup = pair.pIdx and pGroups[pair.pIdx]
 		local cGroup = pair.cIdx and cGroups[pair.cIdx]
-		local pDisplayList, cDisplayList = buildAlignedGemLists(pGroup, cGroup, pSet, cSet)
+		local pDisplay, cDisplay = buildAlignedGemLists(pGroup, cGroup, pSet, cSet)
+		displayListsByPair[idx] = { p = pDisplay, c = cDisplay }
 
-		local pGemY = collectGemEntries(gemEntries, pDisplayList, 20, preY + lineHeight, pGroup)
-		local cGemY = collectGemEntries(gemEntries, cDisplayList, colWidth + 20, preY + lineHeight, cGroup)
+		if pGroup then
+			local w = 10 + DrawStringWidth(16, "VAR", "^7" .. getGroupLabel(pGroup, pair.pIdx))
+			if w > maxPrimaryW then maxPrimaryW = w end
+		end
+		for _, entry in ipairs(pDisplay) do
+			local line = buildGemDisplayString(entry)
+			local w = 20 + DrawStringWidth(gemFontSize, "VAR", line)
+			if w > maxPrimaryW then maxPrimaryW = w end
+		end
+	end
+
+	-- Include primary header width so the compare header has room too
+	local primaryHeaderW = 10 + DrawStringWidth(18, "VAR", colorCodes.POSITIVE .. self:GetShortBuildName(self.primaryBuild.buildName))
+	if primaryHeaderW > maxPrimaryW then maxPrimaryW = primaryHeaderW end
+
+	local colWidth = maxPrimaryW + LAYOUT.compareColGap
+	local contentWidth = colWidth * 2
+	local needsHScroll = contentWidth > vp.width
+	local gemTextWidth = colWidth - 30
+
+	-- Configure horizontal scrollbar
+	local hBar = self.controls.skillsHScrollBar
+	hBar.x = vp.x
+	hBar.y = vp.y + vp.height - LAYOUT.skillsHScrollBarHeight
+	hBar.width = vp.width
+	hBar:SetContentDimension(contentWidth, vp.width)
+	self.skillsScrollX = hBar.offset
+
+	local bottomReserve = needsHScroll and LAYOUT.skillsHScrollBarHeight or 0
+	local scrollViewH = vp.height - bottomReserve
+	SetViewport(vp.x, vp.y, vp.width, scrollViewH)
+	local drawY = 4 - self.scrollY
+	local scrollOffsetX = -self.skillsScrollX
+
+	-- Headers
+	SetDrawColor(1, 1, 1)
+	DrawString(scrollOffsetX + 10, drawY, "LEFT", 18, "VAR", colorCodes.POSITIVE .. self:GetShortBuildName(self.primaryBuild.buildName))
+	DrawString(scrollOffsetX + colWidth + 10, drawY, "LEFT", 18, "VAR", colorCodes.WARNING .. (compareEntry.label or "Compare Build"))
+	drawY = drawY + 24
+
+	-- Position pre-pass: compute gem positions for hover hit-testing
+	local gemEntries = {} -- { gem, x, y, group }
+	local preY = 4 - self.scrollY + 24 -- after headers
+	for idx, pair in ipairs(renderPairs) do
+		preY = preY + 2 -- separator
+		local pDisplayList = displayListsByPair[idx].p
+		local cDisplayList = displayListsByPair[idx].c
+		local pGroup = pair.pIdx and pGroups[pair.pIdx]
+		local cGroup = pair.cIdx and cGroups[pair.cIdx]
+
+		local pGemY = collectGemEntries(gemEntries, pDisplayList, scrollOffsetX + 20, preY + lineHeight, pGroup)
+		local cGemY = collectGemEntries(gemEntries, cDisplayList, scrollOffsetX + colWidth + 20, preY + lineHeight, cGroup)
 
 		preY = preY + m_max(pGemY - preY, cGemY - preY) + 6
 	end
@@ -3909,7 +4140,6 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 				end
 			end
 		end
-		-- Only keep highlights if there's at least one linked gem (not just the hovered one)
 		local count = 0
 		for _ in pairs(highlightSet) do count = count + 1 end
 		if count <= 1 then
@@ -3918,45 +4148,34 @@ function CompareTabClass:DrawSkills(vp, compareEntry)
 	end
 
 	-- Draw pass
-	for _, pair in ipairs(renderPairs) do
+	for idx, pair in ipairs(renderPairs) do
 		SetDrawColor(0.3, 0.3, 0.3)
-		DrawImage(nil, 4, drawY, vp.width - 8, 1)
+		-- Divider spans the viewport width, independent of horizontal scroll
+		DrawImage(nil, 0, drawY, vp.width, 1)
 		drawY = drawY + 2
 
-		local pSet = pair.pIdx and pSets[pair.pIdx] or {}
-		local cSet = pair.cIdx and cSets[pair.cIdx] or {}
+		local pDisplayList = displayListsByPair[idx].p
+		local cDisplayList = displayListsByPair[idx].c
 		local pFinalGemY = drawY + lineHeight
 		local cFinalGemY = drawY + lineHeight
 
-		-- Build aligned display lists
 		local pGroup = pair.pIdx and pGroups[pair.pIdx]
 		local cGroup = pair.cIdx and cGroups[pair.cIdx]
-		local pDisplayList, cDisplayList = buildAlignedGemLists(pGroup, cGroup, pSet, cSet)
 
-		-- Primary group label (left side)
 		if pGroup then
-			local groupLabel = pGroup.displayLabel or pGroup.label or ("Group " .. pair.pIdx)
-			if pGroup.slot then
-				groupLabel = groupLabel .. " (" .. pGroup.slot .. ")"
-			end
-			DrawString(10, drawY, "LEFT", 16, "VAR", "^7" .. groupLabel)
+			DrawString(scrollOffsetX + 10, drawY, "LEFT", 16, "VAR", "^7" .. getGroupLabel(pGroup, pair.pIdx))
 		end
-
-		-- Compare group label (right side)
 		if cGroup then
-			local groupLabel = cGroup.displayLabel or cGroup.label or ("Group " .. pair.cIdx)
-			if cGroup.slot then
-				groupLabel = groupLabel .. " (" .. cGroup.slot .. ")"
-			end
-			DrawString(colWidth + 10, drawY, "LEFT", 16, "VAR", "^7" .. groupLabel)
+			DrawString(scrollOffsetX + colWidth + 10, drawY, "LEFT", 16, "VAR", "^7" .. getGroupLabel(cGroup, pair.cIdx))
 		end
 
-		pFinalGemY = drawGemList(pDisplayList, 20, drawY + lineHeight, highlightSet)
-		cFinalGemY = drawGemList(cDisplayList, colWidth + 20, drawY + lineHeight, highlightSet)
+		pFinalGemY = drawGemList(pDisplayList, scrollOffsetX + 20, drawY + lineHeight, highlightSet, gemTextWidth)
+		cFinalGemY = drawGemList(cDisplayList, scrollOffsetX + colWidth + 20, drawY + lineHeight, highlightSet, gemTextWidth)
 
-		-- Calculate height for this row
 		drawY = drawY + m_max(pFinalGemY - drawY, cFinalGemY - drawY) + 6
 	end
+
+	self.skillsTotalContentHeight = drawY + self.scrollY + 36
 
 	SetViewport()
 end
@@ -4052,6 +4271,7 @@ function CompareTabClass:DrawCalcsSkillHeader(vp, compareEntry, headerHeight, pr
 	self.calcsSkillHeaderHover = nil  -- Reset hover state
 	if pOutput or cOutput then
 		local cursorX, cursorY = GetCursorPos()
+		local wrapWidth = colWidth - 8
 		local infoLines = {
 			{ label = "Aura/Buff Skills", key = "BuffList", breakdown = "SkillBuffs" },
 			{ label = "Combat Buffs", key = "CombatList" },
@@ -4061,33 +4281,42 @@ function CompareTabClass:DrawCalcsSkillHeader(vp, compareEntry, headerHeight, pr
 			local pVal = pOutput and pOutput[info.key]
 			local cVal = cOutput and cOutput[info.key]
 			if (pVal and pVal ~= "") or (cVal and cVal ~= "") then
+				local pLines = (pVal and pVal ~= "") and wrapInfoLine(info.label .. ": " .. pVal, wrapWidth) or {}
+				local cLines = (cVal and cVal ~= "") and wrapInfoLine(info.label .. ": " .. cVal, wrapWidth) or {}
+				local pH = #pLines * 18
+				local cH = #cLines * 18
+				local rowH = m_max(pH, cH, 18)
 				-- Check hover per-side for lines that have breakdown data
-				if info.breakdown and cursorY >= textY and cursorY < textY + 18 then
-					local onLeft = cursorX >= leftX and cursorX < rightX
-					local onRight = cursorX >= rightX and cursorX < vp.x + vp.width
+				if info.breakdown and cursorY >= textY and cursorY < textY + rowH then
+					local onLeft = cursorX >= leftX and cursorX < rightX and pH > 0 and cursorY < textY + pH
+					local onRight = cursorX >= rightX and cursorX < vp.x + vp.width and cH > 0 and cursorY < textY + cH
 					if onLeft then
 						SetDrawColor(0.15, 0.25, 0.15)
-						DrawImage(nil, leftX, textY, colWidth, 18)
+						DrawImage(nil, leftX, textY, colWidth, pH)
 						self.calcsSkillHeaderHover = {
 							breakdown = info.breakdown,
 							label = info.label,
 							build = self.primaryBuild,
-							x = leftX, y = textY, w = colWidth, h = 18,
+							x = leftX, y = textY, w = colWidth, h = pH,
 						}
 					elseif onRight then
 						SetDrawColor(0.15, 0.25, 0.15)
-						DrawImage(nil, rightX, textY, colWidth, 18)
+						DrawImage(nil, rightX, textY, colWidth, cH)
 						self.calcsSkillHeaderHover = {
 							breakdown = info.breakdown,
 							label = info.label,
 							build = compareEntry,
-							x = rightX, y = textY, w = colWidth, h = 18,
+							x = rightX, y = textY, w = colWidth, h = cH,
 						}
 					end
 				end
-				DrawString(leftX, textY + 1, "LEFT", 14, "VAR", "^7" .. info.label .. ": " .. (pVal or ""))
-				DrawString(rightX, textY + 1, "LEFT", 14, "VAR", "^7" .. info.label .. ": " .. (cVal or ""))
-				textY = textY + 18
+				for i, line in ipairs(pLines) do
+					DrawString(leftX, textY + 1 + (i - 1) * 18, "LEFT", 14, "VAR", "^7" .. line)
+				end
+				for i, line in ipairs(cLines) do
+					DrawString(rightX, textY + 1 + (i - 1) * 18, "LEFT", 14, "VAR", "^7" .. line)
+				end
+				textY = textY + rowH
 			end
 		end
 	end

@@ -333,12 +333,14 @@ end
 -- Returns: pHover, cHover, b1Hover, b2Hover, b3Hover, b2X, b2Y, b2W, b2H, hoverItem, hoverItemsTab
 -- copyBtnW, copyBtnH, buyBtnW are button dimensions (passed from LAYOUT by caller).
 local ITEM_BOX_W = 310
+M.ITEM_BOX_W = ITEM_BOX_W
 local ITEM_BOX_H = 20
 
 function M.drawCompactSlotRow(drawY, slotLabel, pItem, cItem,
 	colWidth, cursorX, cursorY, maxLabelW, primaryItemsTab, compareItemsTab, pWarn, cWarn, slotMissing,
-	copyBtnW, copyBtnH, buyBtnW, copyUseBtnW)
+	copyBtnW, copyBtnH, buyBtnW, copyUseBtnW, xOffset)
 
+	xOffset = xOffset or 0
 	local pName = pItem and pItem.name or "(empty)"
 	local cName = cItem and cItem.name or "(empty)"
 	if pWarn and pWarn ~= "" then pName = pName .. pWarn end
@@ -348,11 +350,11 @@ function M.drawCompactSlotRow(drawY, slotLabel, pItem, cItem,
 	local diffLabel = M.getSlotDiffLabel(pItem, cItem)
 
 	-- Layout positions (fixed 310px box width matching regular Items tab)
-	local labelX = 10
+	local labelX = 10 + xOffset
 	local pBoxX = labelX + maxLabelW + 4
 	local pBoxW = ITEM_BOX_W
 
-	local cBoxX = colWidth + 10
+	local cBoxX = colWidth + 10 + xOffset
 	local cBoxW = ITEM_BOX_W
 
 	-- Diff indicator position
