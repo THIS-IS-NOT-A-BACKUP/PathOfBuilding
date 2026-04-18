@@ -3,17 +3,18 @@ VERSION[2.64.0][2026/04/18]
 --- New to Path of Building ---
 * Add build comparison tab (oboking)
 * Add support for Imbued Supports (Peechey)
-* Add Unholy Aberration spectre (arielrahamim)
-* Add support for Lethal Dose support (majochem)
-* Add Life Recharge to sidebar when using Eternal Youth (LocalIdentity)
-* Add Conjuror of Rot Spectre (Peechey)
-* Add support for listing all active Tattoos (Peechey)
-* Add warning for eligible items missing an anoint (OursCodeur)
-* Default staged skills to their maximum stages (OursCodeur)
 * Preserve skill selection on character re-import (mcagnion)
 * Remember league for imported characters (pHiney)
 * Watcher's eye trade search (vaisest)
 * Trader improvements (vaisest)
+* Add Unholy Aberration spectre (arielrahamim)
+* Add Conjuror of Rot Spectre (Peechey)
+* Add support for higher Life values in the Minion Pact config (Vanqy9316)
+* Add support for Lethal Dose support (majochem)
+* Add Life Recharge to sidebar when using Eternal Youth (LocalIdentity)
+* Add support for listing all active Tattoos (Peechey)
+* Add warning for eligible items missing an anoint (OursCodeur)
+* Default staged skills to their maximum stages (OursCodeur)
 * Add more specific jewel tooltip comparison sorting (vaisest)
 
 --- Fixed Crashes ---
@@ -50,22 +51,22 @@ VERSION[2.64.0][2026/04/18]
 * Fix for Chieftain resist nodes applying effects twice due to Foulborn Choir of the Storm (EminGul)
 
 --- Fixed Behaviours ---
+* Fix cluster import sometimes not allocating the correct nodes (LocalIdentity)
+* Fix Resistance Shrine not granting max Chaos Resistance (LocalIdentity)
 * Fix Replica Dragonfang's Flight not working with transfigured Lightning Tendrils (LocalIdentity)
 * Fix Earthbreaker Totems Slam skills benefiting from Exert bonuses (LocalIdentity)
 * Fix Exposure mods on Balance of Terror not working (LocalIdentity)
 * Fix Ahuana's Bite and Bonechill's "inc damage taken" mods stacking (LocalIdentity)
-* Fix Resistance Shrine not granting max Chaos Resistance (LocalIdentity)
 * Fix Animate Weapon of Self Reflection not granting weapon mods to minion (LocalIdentity)
 * Fix Cryogenesis disabling flat damage from other sources when using Ele Hit (Wires77)
+* Fix mods on Ring 3 applying when The Unseen Hand isn't allocated (Peechey)
 * Fix issues with gems socketed in Ring slot 3 (Paliak)
 * Fix Vaal Flameblast base AoE and scaling (Blitz54)
 * Fix Servant of Decay affecting Life Mastery (Peechey)
 * Fix filtering Support gems in SkillsTab (Peechey)
-* Fix mods on Ring 3 applying when The Unseen Hand isn't allocated (Peechey)
 * Fix Dual Wield mastery granting damage when using a Thrusting + non-thrusting sword (LocalIdentity)
 * Remove tattoo tooltip and popup for cluster jewel keystones (Peechey)
 * Fix Tinctures applying their effects even when you have no Mana (LocalIdentity)
-* Fix cluster import sometimes not allocating the correct nodes (LocalIdentity)
 
 --- Accuracy Improvements ---
 * Fix Perfidy missing 3.25.0 changes (LocalIdentity)
@@ -77,8 +78,6 @@ VERSION[2.64.0][2026/04/18]
 --- Fixed Bugs ---
 * Fix URL spoofing issue with imported URLs (Wires77)
 
---- Other changes ---
-* Change character limit for ConfigTab "count" object from 7 to 10 (Vanqy9316)
 
 VERSION[2.63.0][2026/03/15]
 
