@@ -135,7 +135,7 @@
 	<File name="Classes/ControlHost.lua" part="program" sha1="183e699e358bb4945d72163af8f369443a08ce0a" />
 	<File name="Classes/DraggerControl.lua" part="program" sha1="239b2fbc675d4fe9a8fe36a79fe93870ae298bc6" />
 	<File name="Classes/DropDownControl.lua" part="program" sha1="a67f62e62c480d77ae82f9a6cf6b440ec0b79e3c" />
-	<File name="Classes/EditControl.lua" part="program" sha1="385d7947d8098f955286cc697dcd9e945ff6304f" />
+	<File name="Classes/EditControl.lua" part="program" sha1="123ec882687fc517145dad2ad91c7e80acdfbb4e" />
 	<File name="Classes/ExtBuildListControl.lua" part="program" sha1="4d1dedc752e5c979ae0ad3928faaec8b8ea052be" />
 	<File name="Classes/ExtBuildListProvider.lua" part="program" sha1="79d6bab71c0e0194e7c5b48e6cfb348d85e20263" />
 	<File name="Classes/FolderListControl.lua" part="program" sha1="72629b1e31a67c0af958d980c3e97586e91d0422" />
@@ -168,7 +168,7 @@
 	<File name="Classes/PowerReportListControl.lua" part="program" sha1="9308c76ea2cdf04ff9d00ffd7fa77d0ea7112eb6" />
 	<File name="Classes/RectangleOutlineControl.lua" part="program" sha1="4da285dbe76549deae46d3835e00c382c59c18b4" />
 	<File name="Classes/ResizableEditControl.lua" part="program" sha1="1270c263bd762759cc1121c3eeb4906018136e05" />
-	<File name="Classes/ScrollBarControl.lua" part="program" sha1="5d889122e65ba9cc99dbafe4aaeaa51214e53462" />
+	<File name="Classes/ScrollBarControl.lua" part="program" sha1="58f68ca961c625d3aba4c8946f7894371c74d335" />
 	<File name="Classes/SearchHost.lua" part="program" sha1="1fd99b9fbd2c9d26e99397cece708771ce2ad0e1" />
 	<File name="Classes/SectionControl.lua" part="program" sha1="56f40224d0766ed2699b1ff839f79c43fd5cbf44" />
 	<File name="Classes/SharedItemListControl.lua" part="program" sha1="907f697112a9738028c8a358e996a7ca8766ea1b" />
@@ -176,7 +176,7 @@
 	<File name="Classes/SkillListControl.lua" part="program" sha1="2af58d58b7f9e4027c844a14f95c1b1775083ecb" />
 	<File name="Classes/SkillSetListControl.lua" part="program" sha1="2694184c7fec8b25a3af11f228b830f55859bc69" />
 	<File name="Classes/SkillsTab.lua" part="program" sha1="78174ff0cbbf96ec2ec5c223b5820bc2b66e689e" />
-	<File name="Classes/SliderControl.lua" part="program" sha1="11563a380796c37ed7d5b08afdc05c427becd4a5" />
+	<File name="Classes/SliderControl.lua" part="program" sha1="a668ed8ac5bcc6d12277bd8c406d9d754032861e" />
 	<File name="Classes/TextListControl.lua" part="program" sha1="08444ee7a89fac97d6727541b0e94b4997c1c7af" />
 	<File name="Classes/TimelessJewelListControl.lua" part="program" sha1="c3d0971d4e1d2b44ead1716b18f3be5f4038596d" />
 	<File name="Classes/TimelessJewelSocketControl.lua" part="program" sha1="07de3a54c591ba767a644050a27a9767ca621bf1" />
@@ -346,7 +346,7 @@
 	<File name="Modules/Common.lua" part="program" sha1="f7e50e6f3c3e379a216de99b15af6a8adfd430a7" />
 	<File name="Modules/ConfigOptions.lua" part="program" sha1="16480c293e47785fcae3d97813804f6f8c69358f" />
 	<File name="Modules/ConfigVisibility.lua" part="program" sha1="ad4a825bfe36dc94dca1ac7033d815110fd46d3c" />
-	<File name="Modules/Data.lua" part="program" sha1="abf289664e9b346ee0d32e1cc85e0beb139e459f" />
+	<File name="Modules/Data.lua" part="program" sha1="53e263b912e18c90618c7b3319d600b327549755" />
 	<File name="Modules/DataLegionLookUpTableHelper.lua" part="program" sha1="53f1e555399c97b9f1249e97fb0fd34c367cdd56" />
 	<File name="Modules/ItemTools.lua" part="program" sha1="7d5ac42c5b3c1c216bc84f810940ea9323618657" />
 	<File name="Modules/Main.lua" part="program" sha1="a0930e1ecdca43cf2630690fcacb36423a2f84a5" />
