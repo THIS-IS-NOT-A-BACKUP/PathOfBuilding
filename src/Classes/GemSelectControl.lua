@@ -109,12 +109,12 @@ function GemSelectClass:PopulateGemList()
 	local characterLevel = self.skillsTab.build and self.skillsTab.build.characterLevel or 1
 
 	for gemId, gemData in pairs(self.skillsTab.build.data.gems) do
-		if not gemData.grantedEffect.fromItem and (self.sortGemsBy and gemData.tags[self.sortGemsBy] == true or not self.sortGemsBy) then
+		if not gemData.grantedEffect.hideFromGemList and (self.sortGemsBy and gemData.tags[self.sortGemsBy] == true or not self.sortGemsBy) then
 			local levelRequirement = gemData.grantedEffect.levels[1].levelRequirement or 1
 			if characterLevel >= levelRequirement or not matchLevel then
 				if self.imbuedSelect then
-					-- Imbued dropdown only allows non-exceptional support gems.
-					if gemData.grantedEffect.support and not gemData.tagString:match("Exceptional") and not gemData.grantedEffect.plusVersionOf then
+					-- Imbued dropdown only allows non-exceptional support gems and supports that don't grant active skills
+					if gemData.grantedEffect.support and not gemData.tagString:match("Exceptional") and not gemData.grantedEffect.plusVersionOf and (not gemData.secondaryGrantedEffect or gemData.secondaryGrantedEffect.support) then
 						self.gems["Default:" .. gemId] = gemData
 					end
 				else
@@ -139,7 +139,7 @@ function GemSelectClass:FilterSupport(gemId, gemData)
 	end
 
 	if self.imbuedSelect then
-		return gemData.grantedEffect.support and not gemData.tagString:match("Exceptional")	and self.sortCache.canSupport[gemId]
+		return self.sortCache.canSupport[gemId]
 	end
 
 	return (not gemData.grantedEffect.support
